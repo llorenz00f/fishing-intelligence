@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fishing Intelligence icon">
+  <rect width="512" height="512" rx="88" fill="#006f7a"/>
+  <path d="M96 286c53-54 107-54 160 0s107 54 160 0" fill="none" stroke="#f3b64b" stroke-width="42" stroke-linecap="round"/>
+  <path d="M96 198c53-54 107-54 160 0s107 54 160 0" fill="none" stroke="#ffffff" stroke-width="38" stroke-linecap="round" opacity=".92"/>
+  <circle cx="352" cy="326" r="28" fill="#e65f5c"/>
+</svg>

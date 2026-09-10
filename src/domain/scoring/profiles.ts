@@ -1,0 +1,111 @@
+import type { TechniqueScoreProfile } from "@/domain/scoring/types";
+
+export const SCORE_PROFILES: TechniqueScoreProfile[] = [
+  {
+    discipline: "SURFCASTING",
+    technique: "STANDARD_SURFCASTING",
+    version: "rules-v1",
+    active: true,
+    validFrom: "2026-09-09T00:00:00.000Z",
+    weights: {
+      waveHeight: 1.25,
+      swellHeight: 1,
+      windSpeed: 0.9,
+      sst: 0.75,
+      current: 0.6,
+      pressure: 0.6,
+      pressureTrend: 0.7,
+      daylight: 0.7,
+      season: 0.7,
+      depth: 0.15,
+      tideProxy: 0.55,
+    },
+  },
+  {
+    discipline: "SURFCASTING",
+    technique: "BEACH_LEDGERING",
+    version: "rules-v1",
+    active: true,
+    validFrom: "2026-09-09T00:00:00.000Z",
+    weights: {
+      waveHeight: 0.95,
+      swellHeight: 0.75,
+      windSpeed: 0.85,
+      sst: 0.8,
+      current: 0.55,
+      pressure: 0.65,
+      pressureTrend: 0.65,
+      daylight: 0.55,
+      season: 0.65,
+      depth: 0.2,
+      tideProxy: 0.55,
+    },
+  },
+  {
+    discipline: "SHORE_SPINNING",
+    technique: "SHORE_SPINNING",
+    version: "rules-v1",
+    active: true,
+    validFrom: "2026-09-09T00:00:00.000Z",
+    weights: {
+      waveHeight: 0.95,
+      swellHeight: 0.85,
+      windSpeed: 0.8,
+      sst: 0.85,
+      current: 0.85,
+      pressure: 0.45,
+      pressureTrend: 0.75,
+      daylight: 1.25,
+      season: 0.75,
+      depth: 0.25,
+      tideProxy: 0.35,
+    },
+  },
+  {
+    discipline: "BOAT",
+    technique: "DRIFTING",
+    version: "rules-v1",
+    active: true,
+    validFrom: "2026-09-09T00:00:00.000Z",
+    weights: {
+      waveHeight: 1,
+      swellHeight: 0.9,
+      windSpeed: 1.1,
+      sst: 0.85,
+      current: 1,
+      pressure: 0.55,
+      pressureTrend: 0.55,
+      daylight: 0.45,
+      season: 0.9,
+      depth: 0.85,
+      tideProxy: 0.3,
+    },
+  },
+  {
+    discipline: "SPEARFISHING",
+    technique: "SPEAR_AMBUSH",
+    version: "rules-v1",
+    active: true,
+    validFrom: "2026-09-09T00:00:00.000Z",
+    weights: {
+      waveHeight: 1.2,
+      swellHeight: 1.1,
+      windSpeed: 0.85,
+      sst: 0.8,
+      current: 1,
+      pressure: 0.35,
+      pressureTrend: 0.4,
+      daylight: 0.75,
+      season: 0.7,
+      depth: 0.8,
+      tideProxy: 0.2,
+    },
+  },
+];
+
+export function getScoreProfile(technique: string) {
+  return (
+    SCORE_PROFILES.find((profile) => profile.technique === technique && profile.active) ??
+    SCORE_PROFILES.find((profile) => profile.technique === "SHORE_SPINNING")!
+  );
+}
