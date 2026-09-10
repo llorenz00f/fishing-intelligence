@@ -58,10 +58,16 @@ export default function MapCanvas() {
       setSnap(shortViewport ? "collapsed" : "medium");
       map.fitBounds(bounds, { padding: { top: 175, bottom: shortViewport ? 135 : height * .46 + 38, left: 55, right: 96 }, maxZoom: 12.5, duration: 0 });
     }
+    setReady(true);
+    requestAnimationFrame(() => { if (!initialized && !cameraMoved.current) frameSpots(); });
     map.on("load", () => {
-      baseStyle.current = structuredClone(map.getStyle());
-      paintMarine(map); setReady(true);
       initialized = true;
+      try {
+        baseStyle.current = structuredClone(map.getStyle());
+        paintMarine(map);
+      } catch {
+        setMessage("Alcuni dettagli della mappa non sono disponibili. Puoi comunque consultare i tuoi spot.");
+      }
       frameSpots();
     });
     map.on("dragstart", () => { cameraMoved.current = true; });
