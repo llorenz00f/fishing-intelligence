@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppearance } from "./ThemeProvider";
 
 function RainEffect({ heavy, reduced }: { heavy: boolean; reduced: boolean }) {
-  const count = reduced ? 4 : heavy ? 16 : 9;
+  const count = reduced ? 6 : heavy ? 28 : 16;
   return <div className="ambient-rain">{Array.from({ length: count }, (_, index) => <i key={index} style={{ "--drop-x": `${(index * 37 + 11) % 100}%`, "--drop-delay": `${-(index * 1.7)}s`, "--drop-duration": `${3.8 + index % 4}s` } as CSSProperties} />)}</div>;
 }
 function StormEffect() {
@@ -40,7 +40,7 @@ export function WeatherAmbientLayer() {
   const reduced = reducedMotion || preferences.ambientEffectIntensity === "reduced";
   const operational = !["/dashboard", "/forecast", "/profile/appearance"].includes(pathname);
   const effects = weather.ambientEffects;
-  return <div className="weather-ambient" data-testid="weather-ambient" data-weather={weather.weatherState} data-reduced={reduced} data-operational={operational} aria-hidden="true">
+  return <div className="weather-ambient" data-testid="weather-ambient" data-weather={weather.weatherState} data-reduced={reduced} data-intensity={preferences.ambientEffectIntensity} data-operational={operational} aria-hidden="true">
     {effects.includes("rain") ? <RainEffect heavy={weather.weatherState === "heavy-rain" || weather.weatherState === "thunderstorm"} reduced={reduced} /> : null}
     {effects.includes("clouds") ? <div className="ambient-clouds" /> : null}
     {effects.includes("fog") ? <MistEffect /> : null}

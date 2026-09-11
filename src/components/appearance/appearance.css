@@ -84,21 +84,22 @@
 .plan-comparison li svg { color: var(--success); }
 .app-shell { isolation: isolate; position: relative; }
 .app-main { position: relative; z-index: 1; }
-.weather-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; opacity: .65; animation: ambient-enter 1200ms ease both; }
-.weather-ambient[data-operational="true"] { opacity: .15; }
-.weather-ambient[data-reduced="true"] { opacity: .25; }
+.weather-ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: strict; opacity: .82; animation: ambient-enter 1200ms ease both; }
+.weather-ambient[data-operational="true"] { opacity: .22; }
+.weather-ambient[data-reduced="true"] { opacity: .34; }
 .weather-ambient > div { position: absolute; inset: 0; pointer-events: none; }
-.ambient-rain i { position: absolute; left: var(--drop-x); top: -10%; height: 42px; width: 1px; background: linear-gradient(transparent, var(--ocean)); opacity: .2; animation: ambient-rain var(--drop-duration) linear var(--drop-delay) infinite; }
-.ambient-clouds { background: linear-gradient(160deg, transparent 15%, var(--glow) 40%, transparent 70%); transform: scale(1.1); animation: ambient-drift 32s ease-in-out infinite alternate; }
-.ambient-mist { background: repeating-linear-gradient(174deg, transparent 0%, var(--glow) 20%, transparent 45%); animation: ambient-drift 40s ease-in-out infinite alternate; }
-.ambient-solar { background: linear-gradient(145deg, var(--glow), transparent 45%, color-mix(in srgb, var(--secondary-accent) 9%, transparent)); animation: ambient-light 25s ease-in-out infinite alternate; }
+.ambient-rain i { position: absolute; left: var(--drop-x); top: -10%; height: 48px; width: 1px; background: linear-gradient(transparent, var(--primary-accent)); opacity: .32; animation: ambient-rain var(--drop-duration) linear var(--drop-delay) infinite; }
+.ambient-clouds { background: linear-gradient(160deg, transparent 12%, var(--glow) 40%, transparent 72%); transform: scale(1.1); filter: saturate(1.15); animation: ambient-drift 32s ease-in-out infinite alternate; }
+.ambient-mist { background: repeating-linear-gradient(174deg, transparent 0%, var(--glow) 20%, transparent 45%); opacity: .82; animation: ambient-drift 40s ease-in-out infinite alternate; }
+.ambient-solar { background: linear-gradient(145deg, var(--glow), transparent 45%, color-mix(in srgb, var(--secondary-accent) 12%, transparent)); filter: saturate(1.2); animation: ambient-light 25s ease-in-out infinite alternate; }
 .ambient-twilight { background: linear-gradient(170deg, transparent 20%, var(--glow) 60%, color-mix(in srgb, var(--secondary-accent) 12%, transparent)); }
 .ambient-storm { background: var(--on-image); opacity: 0; }
+.ambient-current { opacity: .8; }
 .ambient-current i { position: absolute; top: 28%; left: -20%; width: 110%; height: 1px; background: linear-gradient(90deg, transparent, var(--glow), transparent); transform: rotate(-10deg); animation: ambient-drift 22s ease-in-out infinite alternate; }
 .ambient-current i:nth-child(2) { top: 46%; animation-delay: -8s; }
 .ambient-current i:nth-child(3) { top: 70%; animation-delay: -16s; }
 .weather-ambient[data-reduced="true"] * { animation: none !important; }
-.weather-ambient[data-reduced="true"] .ambient-rain i { top: calc(15% + var(--drop-x) / 2); height: 32px; }
+.weather-ambient[data-reduced="true"] .ambient-rain i { top: calc(15% + var(--drop-x) / 2); height: 36px; opacity: .24; }
 :root[data-palette="dynamic-weather"] .score-hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(125deg, var(--glow), transparent 55%); pointer-events: none; }
 :root[data-palette="dynamic-weather"] .score-hero > * { position: relative; }
 :root[data-appearance-ready="true"] body, :root[data-appearance-ready="true"] :is(.card,.score-hero,.sidebar,.bottom-nav,.map-bottom-sheet,.map-toolbar,.condition-list,.sea-state,.appearance-segmented,.theme-choice,.bottom-sheet,.primary-action,.secondary-action,.icon-action,input,select,textarea) { transition: background-color 900ms ease, color 900ms ease, border-color 900ms ease; }
