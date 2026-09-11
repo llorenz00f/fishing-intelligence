@@ -1,4 +1,4 @@
-const CACHE_NAME = "fishing-intelligence-shell-v1";
+const CACHE_NAME = "fishing-intelligence-shell-v2";
 const SHELL_ASSETS = ["/", "/dashboard", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -20,10 +20,17 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+  const { request } = event;
+  // Only documents can use the HTML fallback. Let maps, APIs and assets reach the network directly.
+  if (
+    request.method !== "GET" ||
+    request.mode !== "navigate" ||
+    new URL(request.url).origin !== self.location.origin
+  ) return;
+
   event.respondWith(
-    fetch(event.request).catch(() =>
-      caches.match(event.request).then((cached) => cached ?? caches.match("/dashboard")),
+    fetch(request).catch(async () =>
+      (await caches.match(request)) ?? (await caches.match("/dashboard")) ?? Response.error(),
     ),
   );
 });
