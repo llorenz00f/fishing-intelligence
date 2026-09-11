@@ -53,7 +53,7 @@ Trasformare la Dashboard in una home mobile-first che risponda rapidamente a tre
 - `[x]` Accessibilità, link di sezione e stati di dettaglio.
 - `[x]` Quality check a 320, 360, 390, 412, 430, tablet e desktop.
 - `[x]` Lint, typecheck, test pertinenti e build dopo l’implementazione.
-- `[ ]` Pubblicazione su `main` e verifica del deploy pubblico.
+- `[x]` Pubblicazione su `main` e verifica del deploy pubblico.
 
 ## Ultimo aggiornamento
 
@@ -62,4 +62,5 @@ Macro-step completato: implementazione della Dashboard semplificata e prima veri
 - File aggiunti: questo piano, `docs/WORK_HANDOFF.md`, `src/components/ui/EssentialConditions.tsx`, `src/components/dashboard/DashboardSectionLinks.tsx` e il test E2E dedicato.
 - Verificato: nessun overflow, CTA libera dalla navigazione mobile, dettaglio condizioni progressivo, 4 superfici principali invece di 10.
 - Verificato: lint, typecheck, 242 test unit/integration, 19 test browser e build di produzione superati.
-- Prossimo step: pubblicare su `main` e verificare il deploy pubblico.
+- Verificato: deploy Vercel in stato `Ready`; smoke E2E pubblico Dashboard semplificata superato su tutti i breakpoint.
+- Prossimo step: nessuno per questo macro-step.

@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-Implementato il redesign information-architecture della Dashboard di Fishing Intelligence. Il progetto e su `main` con modifiche locali non ancora pubblicate; la Dashboard e stata fotografata prima e dopo a 320px e 1440px.
+Implementato e pubblicato il redesign information-architecture della Dashboard di Fishing Intelligence. Il progetto e su `main`; il deploy Vercel e `Ready` e la Dashboard pubblica e stata verificata a tutti i breakpoint richiesti.
 
 ## Ultima attivita completata
 
@@ -10,7 +10,7 @@ Audit visivo, piano e implementazione completati. Le 10 superfici informative in
 
 ## Attivita ancora da fare
 
-- Pubblicare su GitHub/Vercel dopo la verifica.
+- Nessuna attività aperta per questo redesign.
 
 ## Decisioni UI prese
 
@@ -55,3 +55,5 @@ Audit visivo, piano e implementazione completati. Le 10 superfici informative in
 - Test unit/integration: 242 superati.
 - Test browser: 19 superati, inclusi 320/360/390/412/430/768/1440px, temi e Dynamic Weather.
 - Build produzione: superata.
+- Deploy pubblico: `Ready` su `https://fishing-intelligence.vercel.app`.
+- Smoke E2E pubblico: 8 verifiche superate su 320, 360, 390, 412, 430, 768 e 1440px.
