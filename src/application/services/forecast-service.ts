@@ -59,7 +59,7 @@ export class ForecastService {
     const weather = weatherResult.status === "fulfilled" ? weatherResult.value : [];
     const marine = marineResult.status === "fulfilled" ? marineResult.value : [];
     const marineByTime = new Map(marine.map((point) => [point.timestamp, point.conditions]));
-    const weatherByTime = new Map(weather.map((point) => [point.timestamp, point]));
+    const weatherByTime = new Map(weather.filter(point => !point.isCurrent).map((point) => [point.timestamp, point]));
     const timestamps = Array.from(new Set([...weatherByTime.keys(), ...marineByTime.keys()])).sort();
     const depth = await this.providers.bathymetry.getDepthAtLocation(input.location);
     const fetchedAt = new Date().toISOString();
@@ -90,7 +90,17 @@ export class ForecastService {
       };
     });
 
-    const fallbackHour = hours[0] ?? buildFallbackHour(input, startDate);
+    const preceding = hours.filter(hour => hour.timestamp <= input.start).at(-1);
+    const closest = preceding ?? hours[0];
+    let current = closest && Math.abs(Date.parse(closest.timestamp) - startDate.getTime()) <= 90 * 60_000
+      ? closest : buildFallbackHour(input, startDate);
+    const live = weather.find(point => point.isCurrent && Math.abs(Date.parse(point.timestamp) - startDate.getTime()) <= 90 * 60_000);
+    if (live) {
+      const snapshot = buildSnapshot({ timestamp: live.timestamp, location: input.location, weather: live.conditions, astronomical: live.astronomical,
+        marine: current.snapshot.marine, provider: `${this.providers.weather.name}+${this.providers.marine.name}`, fetchedAt, start: startDate });
+      current = { timestamp: snapshot.timestamp, snapshot, score: calculateFishingScore({ location: input.location, datetime: snapshot.timestamp,
+        discipline: input.discipline, technique: input.technique, species: input.species, environment: snapshot, userHistory: input.history }) };
+    }
     const days = groupDays(hours);
 
     return {
@@ -101,7 +111,7 @@ export class ForecastService {
       generatedAt: fetchedAt,
       providerLabel: `${this.providers.weather.name} / ${this.providers.marine.name}`,
       bestWindow: findBestFishingWindow(hours.map((hour) => ({ timestamp: hour.timestamp, score: hour.score.finalScore }))),
-      current: fallbackHour,
+      current,
       days,
     };
   }

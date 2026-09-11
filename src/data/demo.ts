@@ -101,10 +101,10 @@ export const demoSessions: FishingSession[] = baseHistory.slice(0, 8).map((item,
   conditionScore: estimateConditionScore(item),
 }));
 
-export async function getDemoForecast() {
+export async function getDemoForecast(location: LocationPoint = demoLocation) {
   const service = new ForecastService(createProviderBundle());
   return service.getForecast({
-    location: demoLocation,
+    location,
     discipline: "SHORE_SPINNING",
     technique: "SHORE_SPINNING",
     species: "SPIGOLA",

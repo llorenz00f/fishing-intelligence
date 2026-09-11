@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
 
 test("appearance keeps the guest flow focused and persists the free theme", async ({ page }) => {
+  await page.route("**/api/profile/appearance", route => route.fulfill({ json: { userId: null, plan: "FREE", preferences: null, storage: "local", displayName: null } }));
   await page.goto("/profile/appearance");
   await expect(page.getByRole("heading", { name: "Aspetto" })).toBeVisible();
   await expect(page.locator(".theme-choice")).toHaveCount(6);

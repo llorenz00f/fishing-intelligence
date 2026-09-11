@@ -1,11 +1,13 @@
 "use client";
-import { ForecastThemeBridge } from "@/components/appearance/ThemeProvider";
-import { useRef, useState } from "react";
+import { ForecastThemeBridge, useAppearance } from "@/components/appearance/ThemeProvider";
+import { saveForecastLocation } from "@/domain/forecast/location";
+import { ForecastLocation } from "./ForecastLocation";
+import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Check, Fish, MapPin, RefreshCw, Star, Target } from "lucide-react";
 import type { DailyForecastViewModel, ForecastViewModel, HourlyForecastViewModel } from "@/application/services/forecast-service";
 import { MobileHeader } from "@/components/app/MobileHeader";
 import { ScoreHero } from "./ScoreCard";
-import { ConditionCards } from "@/components/ui/ConditionCards";
+import { ConditionCards, WeatherObservation } from "@/components/ui/ConditionCards";
 import { FactorBreakdown } from "./FactorBreakdown";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { disciplines, labelForSpecies, labelForTechnique, species, techniques } from "@/data/catalog";
@@ -21,7 +23,7 @@ export function FilterBottomSheet({ open, onClose, filters, onApply, pending }: 
       <fieldset className="filter-fieldset"><legend>Come peschi?</legend><div className="choice-grid">{disciplines.map(item => <button type="button" className="choice-card" aria-pressed={draft.discipline === item.code} data-active={draft.discipline === item.code} key={item.code} onClick={() => setDraft({ ...draft, discipline: item.code, technique: techniques.find(t => t.discipline === item.code)!.code })}><strong>{item.label}</strong>{draft.discipline === item.code ? <Check size={16} /> : null}</button>)}</div></fieldset>
       <div className="grid-2"><label>Tecnica<select value={draft.technique} onChange={event => setDraft({ ...draft, technique: event.target.value as TechniqueCode })}>{techniques.filter(item => item.discipline === draft.discipline).map(item => <option key={item.code} value={item.code}>{item.label}</option>)}</select></label>
       <label>Specie<select value={draft.species} onChange={event => setDraft({ ...draft, species: event.target.value })}>{species.map(item => <option key={item.code} value={item.code}>{item.commonName}</option>)}</select></label></div>
-      <label>Localita<input value={draft.label} onChange={event => setDraft({ ...draft, label: event.target.value })} required /></label>
+      <label>Localita<input value={draft.label} maxLength={100} onChange={event => setDraft({ ...draft, label: event.target.value })} required /></label>
       <div className="grid-2 coordinate-fields"><label>Latitudine<input type="number" step="any" min="-90" max="90" inputMode="decimal" value={draft.lat} onChange={event => setDraft({ ...draft, lat: event.target.value })} required /></label>
       <label>Longitudine<input type="number" step="any" min="-180" max="180" inputMode="decimal" value={draft.lng} onChange={event => setDraft({ ...draft, lng: event.target.value })} required /></label></div>
       <div className="sheet-footer"><button className="primary-action" disabled={pending} type="submit">{pending ? "Aggiornamento..." : "Mostra previsioni"}</button></div>
@@ -37,6 +39,7 @@ export function ForecastStrip({ days, date, best, onSelect }: { days: DailyForec
   return <div className="forecast-strip" aria-label="Confronto giorni">{days.slice(0, 7).map(day => <ForecastDay key={day.date} day={day} selected={day.date === date} best={day.date === best} onSelect={() => onSelect(day)} />)}</div>;
 }
 export function ForecastExplorer({ initialForecast }: { initialForecast: ForecastViewModel }) {
+  const { clearForecast, publishForecast } = useAppearance();
   const initialDay = bestDay(initialForecast.days);
   const [forecast, setForecast] = useState(initialForecast);
   const [date, setDate] = useState(initialDay?.date ?? "");
@@ -46,6 +49,9 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
   const [error, setError] = useState("");
   const [filters, setFilters] = useState<Filters>({ discipline: initialForecast.discipline, technique: initialForecast.technique, species: initialForecast.species ?? "SPIGOLA", lat: String(initialForecast.location.latitude), lng: String(initialForecast.location.longitude), label: initialForecast.location.label ?? "Area selezionata" });
   const requestRef = useRef(0);
+  useEffect(() => {
+    saveForecastLocation({ ...initialForecast.location, label: initialForecast.location.label || "Area selezionata" });
+  }, [initialForecast.location]);
   const day = forecast.days.find(d => d.date === date) ?? forecast.days[0];
   const hour = day?.hours.find(h => h.timestamp === timestamp) ?? day?.hours[0] ?? forecast.current;
   const best = bestDay(forecast.days);
@@ -53,6 +59,7 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
   async function update(next: Filters) {
     const request = ++requestRef.current;
     setPending(true); setError(""); setSheet(false);
+    clearForecast();
     try {
       const params = new URLSearchParams({ ...next, days: "7" });
       const response = await fetch(`/api/forecast?${params}`);
@@ -60,9 +67,11 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
       const data: ForecastViewModel = await response.json();
       if (request !== requestRef.current) return;
       setForecast(data); setFilters(next);
+      saveForecastLocation({ ...data.location, label: data.location.label || "Area selezionata" });
       const best = bestDay(data.days);
       setDate(best?.date ?? ""); setTimestamp(bestHour(best)?.timestamp ?? data.current.timestamp);
     } catch {
+      if (request === requestRef.current) publishForecast(forecast);
       if (request === requestRef.current) setError("Non riusciamo ad aggiornare le previsioni. Restano visibili gli ultimi dati disponibili.");
     } finally { if (request === requestRef.current) setPending(false); }
   }
@@ -70,6 +79,8 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
   return <>
     <ForecastThemeBridge forecast={forecast} />
     <MobileHeader title="Quando andare." location={forecast.location.label} />
+    <ForecastLocation location={forecast.location} onSelect={value => void update({ ...filters, lat: String(value.latitude), lng: String(value.longitude), label: value.label || "Area selezionata" })} />
+    <WeatherObservation snapshot={forecast.current.snapshot} current />
     <div className="forecast-layout" aria-busy={pending}>
       <div className="stack">
         <ScoreHero title={best?.date === day?.date ? "IL GIORNO MIGLIORE" : new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "short" }).format(new Date(day?.date ?? hour.timestamp))} score={hour.score} location={forecast.location.label ?? ""} technique={labelForTechnique(forecast.technique)} species={labelForSpecies(forecast.species)} window={window ? `${formatHour(window.start)} – ${formatHour(window.end)}` : "Non disponibile"}>

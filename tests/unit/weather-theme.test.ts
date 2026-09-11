@@ -318,6 +318,34 @@ describe("forecast service astronomical propagation", () => {
     start: noon.toISOString(), days: 1,
   };
 
+  it("uses the provider's current rain instead of midnight or a dry future hour", async () => {
+    const fetcher = stubWeatherResponse({
+      current: { time: "2026-09-11T12:15", weather_code: 61, precipitation: 0.4, cloud_cover: 100, is_day: 1 },
+      hourly: { time: ["2026-09-11T00:00", "2026-09-11T12:00", "2026-09-11T13:00"], weather_code: [3, 3, 0], precipitation: [0, 0, 0] },
+      daily: { time: ["2026-09-11"], sunrise: ["2026-09-11T05:00"], sunset: ["2026-09-11T18:00"] },
+    });
+    const service = new ForecastService({ weather: new OpenMeteoWeatherProvider(), marine: {
+      name: "open-meteo-marine", getHourlyMarine: async () => [{ timestamp: "2026-09-11T12:00:00.000Z", conditions: { waveHeightM: 1.2, wavePeriodSec: 6 } }],
+    }, bathymetry: new MockBathymetryProvider() });
+    const forecast = await service.getForecast({ ...input, start: "2026-09-11T12:20:00.000Z" });
+    expect(new URL(String(fetcher.mock.calls[0][0])).searchParams.get("current")).toContain("precipitation");
+    expect(forecast.current.timestamp).toBe("2026-09-11T12:15:00.000Z");
+    expect(forecast.current.snapshot.weather).toMatchObject({ weatherCode: 61, precipitationMm: 0.4 });
+    expect(forecast.current.snapshot.marine).toMatchObject({ waveHeightM: 1.2, wavePeriodSec: 6 });
+    expect(forecast.days[0].hours).toHaveLength(3);
+    expect(forecast.days[0].hours[2].snapshot.weather.weatherCode).toBe(0);
+  });
+
+  it("falls back to the current hour, never a distant first hour", async () => {
+    stubWeatherResponse({ hourly: { time: ["2026-09-11T00:00", "2026-09-11T12:00", "2026-09-11T13:00"], weather_code: [65, 0, 95] } });
+    const service = new ForecastService({ weather: new OpenMeteoWeatherProvider(), marine: { name: "empty", getHourlyMarine: async () => [] }, bathymetry: new MockBathymetryProvider() });
+    const forecast = await service.getForecast({ ...input, start: "2026-09-11T12:20:00.000Z" });
+    expect(forecast.current.snapshot.weather.weatherCode).toBe(0);
+    const stale = await service.getForecast({ ...input, start: "2026-09-11T22:20:00.000Z" });
+    expect(stale.current.snapshot.provider).toBe("fallback");
+    expect(stale.current.snapshot.weather).toEqual({});
+  });
+
   it("passes live provider solar events through to both themes and scoring offsets", async () => {
     const fetcher = stubWeatherResponse({
       hourly: { time: ["2026-09-11T12:00"], weather_code: [0], is_day: [1] },

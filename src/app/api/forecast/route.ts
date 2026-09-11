@@ -6,7 +6,7 @@ import { createProviderBundle } from "@/infrastructure/providers/provider-factor
 const querySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
-  label: z.string().optional(),
+  label: z.string().trim().min(1).max(100).optional(),
   discipline: z.enum(["SURFCASTING", "SHORE_SPINNING", "BOAT", "SPEARFISHING"]).default("SHORE_SPINNING"),
   technique: z
     .enum([

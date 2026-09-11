@@ -3,15 +3,17 @@ import type { WeatherTheme } from "./weather";
 
 export type PaletteMode = "dark" | "light";
 type Palette = { background: string; surface: string; elevated: string; strong: string; border: string; text: string; muted: string; accent: string; secondary: string; onAccent: string };
-export type ThemeDefinition = { id: ThemeId; name: string; subtitle: string; premium: boolean; defaultMode: PaletteMode; modes: readonly PaletteMode[]; palette: Palette };
+export type ThemeDefinition = { id: ThemeId; name: string; subtitle: string; premium: boolean; defaultMode: PaletteMode; modes: readonly PaletteMode[]; palette: Palette; lightPalette?: Palette };
 
 const ocean: Palette = { background: "#06151d", surface: "#0b202b", elevated: "#102b37", strong: "#173642", border: "#35505c", text: "#f2faf9", muted: "#a2b9c3", accent: "#25d0c1", secondary: "#dfbd7b", onAccent: "#042b2c" };
-const mediterranean: Palette = { background: "#eef5f6", surface: "#ffffff", elevated: "#e2edf0", strong: "#d1e3e7", border: "#819fa8", text: "#123440", muted: "#496771", accent: "#086ca0", secondary: "#946021", onAccent: "#ffffff" };
+const mediterranean: Palette = { background: "#edf8fc", surface: "#ffffff", elevated: "#dff3f7", strong: "#c5e7ef", border: "#789faa", text: "#123440", muted: "#426370", accent: "#006fba", secondary: "#b94562", onAccent: "#ffffff" };
+const sunsetLight: Palette = { background: "#fcf2f5", surface: "#ffffff", elevated: "#fae6ed", strong: "#f1d3df", border: "#b08a98", text: "#372534", muted: "#775369", accent: "#b83660", secondary: "#067982", onAccent: "#ffffff" };
+const graphiteLight: Palette = { background: "#f1f4f7", surface: "#ffffff", elevated: "#e3eaf2", strong: "#d1deeb", border: "#899aab", text: "#243345", muted: "#52677b", accent: "#275ab2", secondary: "#097969", onAccent: "#ffffff" };
 export const themeRegistry: readonly ThemeDefinition[] = [
   { id: "deep-ocean", name: "Deep Ocean", subtitle: "Il mare, nella sua essenza.", premium: false, defaultMode: "dark", modes: ["dark", "light"], palette: ocean },
   { id: "mediterranean-light", name: "Mediterranean Light", subtitle: "La luce della costa.", premium: true, defaultMode: "light", modes: ["light"], palette: mediterranean },
-  { id: "sunset", name: "Sunset", subtitle: "L'ultima luce, ancora in mare.", premium: true, defaultMode: "dark", modes: ["dark"], palette: { ...ocean, background: "#151b2c", surface: "#20283a", elevated: "#2a3245", strong: "#394258", border: "#546078", text: "#fbf6f1", muted: "#b8bfce", accent: "#f4a48c", secondary: "#8bd7d0", onAccent: "#37201c" } },
-  { id: "graphite-marine", name: "Graphite Marine", subtitle: "Precisione. Nessuna distrazione.", premium: true, defaultMode: "dark", modes: ["dark"], palette: { background: "#191d20", surface: "#22282d", elevated: "#2c343a", strong: "#38434b", border: "#566773", text: "#eff4f6", muted: "#b2bfc8", accent: "#a8c9df", secondary: "#81c9b7", onAccent: "#1b303c" } },
+  { id: "sunset", name: "Sunset", subtitle: "Corallo e luce di fine giornata.", premium: true, defaultMode: "light", modes: ["light", "dark"], lightPalette: sunsetLight, palette: { ...ocean, background: "#29212c", surface: "#352936", elevated: "#443344", strong: "#564259", border: "#87677f", text: "#fff4f6", muted: "#d4b5c8", accent: "#ff9cae", secondary: "#76dfd6", onAccent: "#44202e" } },
+  { id: "graphite-marine", name: "Graphite Marine", subtitle: "Bianco, cobalto e acqua marina.", premium: true, defaultMode: "light", modes: ["light", "dark"], lightPalette: graphiteLight, palette: { background: "#191d20", surface: "#22282d", elevated: "#2c343a", strong: "#38434b", border: "#566773", text: "#eff4f6", muted: "#b2bfc8", accent: "#8cbdff", secondary: "#6fdfb8", onAccent: "#1b303c" } },
   { id: "abyss", name: "Abyss", subtitle: "Solo tu e il mare aperto.", premium: true, defaultMode: "dark", modes: ["dark"], palette: { background: "#080e14", surface: "#0e1821", elevated: "#15232e", strong: "#233442", border: "#3e5668", text: "#dce8ef", muted: "#9bacbb", accent: "#8dbbc9", secondary: "#b0aacd", onAccent: "#142a33" } },
   { id: "dynamic-weather", name: "Dynamic Weather", subtitle: "In sintonia con il tempo.", premium: true, defaultMode: "dark", modes: ["dark"], palette: ocean },
 ];
@@ -47,7 +49,7 @@ export function paletteTokens(p: Palette, mode: PaletteMode): Record<string, str
 }
 const weatherPalettes: Record<WeatherTheme["colorVariant"], { palette: Palette; mode: PaletteMode }> = {
   neutral: { palette: ocean, mode: "dark" },
-  day: { palette: { ...mediterranean, accent: "#08756f", secondary: "#98642c" }, mode: "light" },
+  day: { palette: { ...mediterranean, accent: "#08756f" }, mode: "light" },
   night: { palette: themeRegistry[4].palette, mode: "dark" },
   overcast: { palette: { ...ocean, background: "#1a262f", surface: "#25343e", elevated: "#2e414b", muted: "#b4c4cb", accent: "#a2cfdb" }, mode: "dark" },
   rain: { palette: { ...ocean, background: "#12212b", surface: "#1b303d", elevated: "#244250", muted: "#acc5d0", accent: "#93cfde" }, mode: "dark" },
@@ -58,7 +60,8 @@ const weatherPalettes: Record<WeatherTheme["colorVariant"], { palette: Palette; 
 };
 export function weatherPalette(variant: WeatherTheme["colorVariant"]) { return weatherPalettes[variant]; }
 export function themeTokens(id: ThemeId, mode: PaletteMode) {
-  const palette = id === "deep-ocean" && mode === "light" ? { ...mediterranean, accent: "#08746d", secondary: "#946021" } : getTheme(id).palette;
+  const theme = getTheme(id);
+  const palette = id === "deep-ocean" && mode === "light" ? { ...mediterranean, accent: "#08746d" } : mode === "light" && theme.lightPalette ? theme.lightPalette : theme.palette;
   return paletteTokens(palette, mode);
 }
 function declarations(tokens: Record<string, string>) { return Object.entries(tokens).map(([key, value]) => `${key}:${value}`).join(";"); }

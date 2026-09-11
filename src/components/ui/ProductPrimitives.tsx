@@ -12,7 +12,7 @@ export function Metric({ label, value, icon, helper, horizontal = false }: { lab
 export function StatCard({ label, value, helper }: { label: string; value: ReactNode; helper?: ReactNode }) {
   return <div className="stat-card"><span>{label}</span><strong>{value}</strong>{helper ? <small className="help-text">{helper}</small> : null}</div>;
 }
-export function BestFishingWindow({ window }: { window: string }) {
+export function BestFishingWindow({ window }: { window: ReactNode }) {
   return <div className="best-window"><Sunrise size={24} /><div><span>La fascia migliore</span><strong>{window}</strong></div></div>;
 }
 export function PersonalInsightCard({ eyebrow, title, children }: { eyebrow?: string; title: string; children: ReactNode }) {

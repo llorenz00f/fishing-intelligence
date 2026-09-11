@@ -16,6 +16,7 @@ type AppearanceContext = {
   weatherLocation?: string; weatherSource?: string;
   updatePreferences: (patch: Partial<AppearancePreferences>) => boolean;
   publishForecast: (forecast: ForecastViewModel) => void;
+  clearForecast: () => void;
   refreshProfile: () => Promise<void>;
 };
 const Context = createContext<AppearanceContext | null>(null);
@@ -125,10 +126,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const weather = useMemo(() => {
     if (!dynamic || !forecast || !now || now - Date.parse(forecast.generatedAt) > 6 * 60 * 60_000) return resolveWeatherTheme(null, null, new Date(now));
-    const hours = [forecast.current, ...forecast.days.flatMap(day => day.hours)];
-    const closest = hours.reduce((best, hour) => Math.abs(Date.parse(hour.timestamp) - now) < Math.abs(Date.parse(best.timestamp) - now) ? hour : best);
-    if (Math.abs(Date.parse(closest.timestamp) - now) > 90 * 60_000) return resolveWeatherTheme(null, null, new Date(now));
-    return resolveWeatherTheme(closest.snapshot.weather, closest.snapshot.astronomical, new Date(now));
+    const current = forecast.current.snapshot;
+    // Ambient weather follows the current observation, never a future fishing window.
+    if (/mock|fallback/i.test(current.provider) || !Number.isFinite(Date.parse(current.timestamp)) || Math.abs(Date.parse(current.timestamp) - now) > 90 * 60_000) return resolveWeatherTheme(null, null, new Date(now));
+    return resolveWeatherTheme(current.weather, current.astronomical, new Date(now));
   }, [dynamic, forecast, now]);
   const mode = dynamic ? weatherPalette(weather.colorVariant).mode : resolvePaletteMode(preferences.themeId, preferences.appearanceMode, systemLight);
   const reducedMotion = systemReducedMotion || preferences.reducedMotion;
@@ -168,7 +169,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (!response.ok) throw new Error("save");
         const data = await response.json();
         if (currentProfile.current.userId !== identity.userId || epoch !== generation.current) return;
-        saved.current = normalizeAppearancePreferences(data.preferences ?? next);
+        saved.current = normalizeAppearancePreferences(data.preferences ?? next, identity.plan);
         writeCache(identity.userId, saved.current);
         if (edit === revision.current) setStatus("saved");
       } catch {
@@ -180,7 +181,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
   const publishForecast = useCallback((value: ForecastViewModel) => { setForecast(value); setNow(Date.now()); }, []);
-  return <Context.Provider value={{ preferences, profile, loading, status, mode, reducedMotion, systemReducedMotion, weather, weatherLocation: forecast?.location.label, weatherSource: forecast?.providerLabel, updatePreferences, publishForecast, refreshProfile }}>{children}</Context.Provider>;
+  const clearForecast = useCallback(() => setForecast(null), []);
+  return <Context.Provider value={{ preferences, profile, loading, status, mode, reducedMotion, systemReducedMotion, weather, weatherLocation: forecast?.location.label, weatherSource: forecast?.providerLabel, updatePreferences, publishForecast, clearForecast, refreshProfile }}>{children}</Context.Provider>;
 }
 export function useAppearance() {
   const context = useContext(Context);

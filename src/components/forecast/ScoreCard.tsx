@@ -23,7 +23,7 @@ export function ScoreRing({ score }: { score: number }) {
   </div>;
 }
 export function ScoreHero({ title, score, location, technique, species, window, cta, children }: {
-  title: string; score: FishingScoreResult; location: string; technique: string; species: string; window: string; cta?: ReactNode; children?: ReactNode;
+  title: string; score: FishingScoreResult; location: string; technique: string; species: string; window: ReactNode; cta?: ReactNode; children?: ReactNode;
 }) {
   return <section className="score-hero" aria-label={title}>
     <div className="hero-overline"><span>{title}</span><span className="confidence"><ShieldCheck size={14} />{score.confidence}% affidabilita</span></div>

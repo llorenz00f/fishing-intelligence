@@ -9,6 +9,7 @@ export type ProviderRequest = {
 
 export type HourlyWeatherPoint = {
   timestamp: string;
+  isCurrent?: boolean;
   conditions: WeatherConditions;
   /** Solar events for this forecast hour, when available from the provider. */
   astronomical?: AstronomicalContext;
