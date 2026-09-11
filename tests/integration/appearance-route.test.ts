@@ -14,7 +14,6 @@ const defaultRow = {
   appearance_mode: "system",
   reduced_motion: false,
 };
-const localResponse = { userId: null, plan: "FREE", preferences: null, storage: "local", displayName: null };
 
 function setupClient(plan = "FREE") {
   const profiles = {
@@ -50,18 +49,20 @@ function patch(value: unknown = defaultAppearancePreferences, headers: Record<st
 beforeEach(() => vi.clearAllMocks());
 
 describe("appearance GET", () => {
-  it("returns the local contract when cloud configuration is absent", async () => {
+  it("reports unavailable storage when cloud configuration is absent", async () => {
     createClient.mockResolvedValue(null);
     const response = await GET();
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(localResponse);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ code: "APPEARANCE_UNAVAILABLE", storage: "local" });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
-  it.each([null, new AuthSessionMissingError()])("returns local defaults without a user (%s)", async (error) => {
+  it.each([null, new AuthSessionMissingError()])("requires authentication without a user (%s)", async (error) => {
     const { getUser, client } = setupClient();
     getUser.mockResolvedValue({ data: { user: null }, error });
-    expect(await (await GET()).json()).toEqual(localResponse);
+    const response = await GET();
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Sign in to save profile appearance.", code: "UNAUTHENTICATED" });
     expect(client.from).not.toHaveBeenCalled();
   });
 

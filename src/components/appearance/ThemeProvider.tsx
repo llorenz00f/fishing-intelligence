@@ -53,11 +53,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const savesPending = useRef(0);
 
   const refreshProfile = useCallback(async () => {
-    if (savesPending.current) return;
+    if (savesPending.current) await writeQueue.current;
     const request = ++generation.current;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     try {
       const response = await fetch("/api/profile/appearance", { cache: "no-store" });
+      if (response.status === 401 && currentProfile.current.userId) {
+        currentProfile.current = guest; setProfile(guest);
+        setPreferences(defaultAppearancePreferences);
+        window.location.replace("/login?error=session");
+        return;
+      }
       if (!response.ok) throw new Error("profile");
       const data = await response.json() as Profile & { preferences?: AppearancePreferences | null };
       if (request !== generation.current) return;

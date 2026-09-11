@@ -8,8 +8,9 @@ export const forecastLocationSchema = z.object({
 export function parseForecastLocation(value?: string) {
   try { return forecastLocationSchema.parse(JSON.parse(decodeURIComponent(value ?? ""))); } catch { return null; }
 }
-export function saveForecastLocation(location: z.infer<typeof forecastLocationSchema>) {
+export function saveForecastLocation(location: z.infer<typeof forecastLocationSchema>, userId: string | null) {
+  if (!userId) return;
   const data = forecastLocationSchema.parse(location);
-  document.cookie = `${forecastLocationCookie}=${encodeURIComponent(JSON.stringify(data))};path=/;max-age=2592000;SameSite=Lax${locationIsSecure() ? ";Secure" : ""}`;
+  document.cookie = `${forecastLocationCookie}-${userId}=${encodeURIComponent(JSON.stringify(data))};path=/;max-age=2592000;SameSite=Lax${locationIsSecure() ? ";Secure" : ""}`;
 }
 function locationIsSecure() { return window.location.protocol === "https:"; }

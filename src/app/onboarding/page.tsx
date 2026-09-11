@@ -1,9 +1,11 @@
 import { OnboardingFlow } from "@/components/auth/OnboardingFlow";
+import { requireAccount } from "@/infrastructure/supabase/account";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const { profile } = await requireAccount();
   return (
     <main className="onboarding-page">
-      <OnboardingFlow />
+      <OnboardingFlow account={profile} />
     </main>
   );
 }

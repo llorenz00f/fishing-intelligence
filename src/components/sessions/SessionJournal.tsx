@@ -10,8 +10,8 @@ import { EmptyState, StatCard } from "@/components/ui/ProductPrimitives";
 import { disciplines } from "@/data/catalog";
 import { useLocalSessions } from "./useLocalSessions";
 
-export function SessionJournal({ sessions: initialSessions }: { sessions: FishingSession[] }) {
-  const { sessions: localSessions } = useLocalSessions();
+export function SessionJournal({ sessions: initialSessions, userId }: { sessions: FishingSession[]; userId: string }) {
+  const { sessions: localSessions } = useLocalSessions(userId);
   const initialIds = new Set(initialSessions.map(session => session.id));
   const sessions = [...localSessions.filter(session => !initialIds.has(session.id)), ...initialSessions].sort((a, b) => b.startTime.localeCompare(a.startTime));
   const [sheet, setSheet] = useState(false);

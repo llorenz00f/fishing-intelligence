@@ -1,4 +1,4 @@
--- Run as the database administrator after 0001 and 0002. All fixtures roll back.
+-- Run as the database administrator after 0001, 0002 and 0003. All fixtures roll back.
 begin;
 
 create function pg_temp.assert_true(condition boolean, description text)
@@ -31,10 +31,9 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('90000000-0000-0000-0000-000000000003', 'appearance-captain@example.invalid', '{}'),
   ('90000000-0000-0000-0000-000000000004', 'appearance-new@example.invalid', '{}');
 
-insert into public.profiles (id, display_name, plan) values
-  ('90000000-0000-0000-0000-000000000001', 'Free', 'FREE'),
-  ('90000000-0000-0000-0000-000000000002', 'Pro', 'PRO'),
-  ('90000000-0000-0000-0000-000000000003', 'Captain', 'CAPTAIN');
+update public.profiles set display_name = 'Free', plan = 'FREE' where id = '90000000-0000-0000-0000-000000000001';
+update public.profiles set display_name = 'Pro', plan = 'PRO' where id = '90000000-0000-0000-0000-000000000002';
+update public.profiles set display_name = 'Captain', plan = 'CAPTAIN' where id = '90000000-0000-0000-0000-000000000003';
 insert into public.user_preferences (user_id, settings)
 values ('90000000-0000-0000-0000-000000000001', '{"existingSetting":true}');
 
@@ -42,6 +41,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claims', '{"sub":"90000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"plan":"CAPTAIN"}}', true);
 
+select pg_temp.assert_true((select role = 'user' and not is_beta_tester and plan = 'FREE' from public.profiles where id = auth.uid()), 'Auth trigger ignores forged plan metadata and creates a FREE user profile');
 update public.profiles set display_name = 'Still editable', locale = 'en', plan = 'FREE' where id = auth.uid();
 select pg_temp.assert_true((select display_name = 'Still editable' and locale = 'en' from public.profiles where id = auth.uid()), 'ordinary profile updates remain available');
 select pg_temp.assert_error($q$update public.profiles set plan = 'PRO' where id = auth.uid()$q$, '42501', 'owner cannot upgrade plan');
@@ -93,11 +93,13 @@ select pg_temp.assert_true((select theme_id = 'dynamic-weather' and dynamic_weat
 
 select set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000004', true);
 select set_config('request.jwt.claims', '{"sub":"90000000-0000-0000-0000-000000000004","role":"authenticated"}', true);
-select pg_temp.assert_error($q$insert into public.profiles (id, display_name, plan) values (auth.uid(), 'New paid', 'PRO')$q$, '42501', 'owner cannot insert a paid profile');
+select pg_temp.assert_true((select role = 'user' and not is_beta_tester and plan = 'FREE' from public.profiles where id = auth.uid()), 'Auth trigger creates a default profile for a new user');
+select pg_temp.assert_error($q$update public.profiles set plan = 'PRO' where id = auth.uid()$q$, '42501', 'ordinary user cannot upgrade from the profile endpoint');
+select pg_temp.assert_error($q$update public.profiles set role = 'admin' where id = auth.uid()$q$, '42501', 'ordinary user cannot grant admin role');
+select pg_temp.assert_error($q$update public.profiles set is_beta_tester = true where id = auth.uid()$q$, '42501', 'ordinary user cannot grant beta access');
 select pg_temp.assert_error($q$insert into public.appearance_preferences (user_id, theme_id) values (auth.uid(), 'sunset')$q$, '42501', 'missing profile does not grant paid access');
 insert into public.appearance_preferences (user_id, appearance_mode, reduced_motion) values (auth.uid(), 'light', true);
-insert into public.profiles (id, display_name) values (auth.uid(), 'New free');
-select pg_temp.assert_true((select plan = 'FREE' from public.profiles where id = auth.uid()), 'owner can create a default FREE profile');
+select pg_temp.assert_true((select plan = 'FREE' from public.profiles where id = auth.uid()), 'trigger-created profile remains FREE');
 
 set local role anon;
 select pg_temp.assert_error($q$select * from public.appearance_preferences$q$, '42501', 'anonymous database reads are denied');

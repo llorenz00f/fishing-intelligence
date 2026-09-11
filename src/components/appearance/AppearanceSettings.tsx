@@ -16,7 +16,7 @@ export function ThemePreviewCard({ theme, selected, locked, onSelect }: { theme:
       <span className="preview-chart">{[28, 41, 37, 62, 75, 58, 46, 68, 81, 72, 51, 38].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</span>
       {theme.id === "dynamic-weather" ? <span className="preview-weather"><CloudSun size={16} /><span>Live</span></span> : null}
     </span>
-    <span className="theme-choice-label"><span><strong>{theme.name}</strong><small>{theme.subtitle}</small></span><span className="theme-choice-check">{selected ? <Check size={18} /> : locked ? <LockKeyhole size={15} /> : null}</span></span>
+    <span className="theme-choice-label"><span><strong>{theme.name}</strong><small>{theme.subtitle}</small>{theme.premium ? <small className="premium-badge">PRO</small> : null}</span><span className="theme-choice-check">{selected ? <Check size={18} /> : locked ? <LockKeyhole size={15} /> : null}</span></span>
   </button>;
 }
 
@@ -51,6 +51,6 @@ export function AppearanceSettings() {
         <p className="appearance-save" role="status" aria-live="polite">{status === "saving" ? "Salvataggio..." : status === "error" ? "Salvataggio non disponibile. Ultimo aspetto salvato mantenuto." : status === "saved" ? <><CheckCircle2 size={16} />Aspetto aggiornato</> : status === "local" ? <><CheckCircle2 size={16} />Aspetto aggiornato su questo dispositivo</> : profile.userId ? "Sincronizzato con il tuo profilo" : "Preferenze su questo dispositivo"}</p>
       </aside>
     </div>
-    {upsell ? <BottomSheet open onClose={() => setUpsell(false)} title="Personalizza Fishing Intelligence"><div className="appearance-upsell"><Crown size={30} /><p>Disponibile con PRO.</p><div className="upsell-palette-strip" aria-hidden="true">{themeRegistry.slice(0, 5).map(item => <span key={item.id} data-preview-palette={item.id} data-preview-mode={item.defaultMode}><Waves size={24} /></span>)}</div><Link className="primary-action" href="/profile/plan" onClick={() => setUpsell(false)}>Scopri PRO<ArrowRight size={18} /></Link></div></BottomSheet> : null}
+    {upsell ? <BottomSheet open onClose={() => setUpsell(false)} title="Tema disponibile con PRO"><div className="appearance-upsell"><Crown size={30} /><p>Tutte le palette e Dynamic Weather sono inclusi in PRO e CAPTAIN.</p><div className="upsell-palette-strip" aria-hidden="true">{themeRegistry.slice(0, 5).map(item => <span key={item.id} data-preview-palette={item.id} data-preview-mode={item.defaultMode}><Waves size={24} /></span>)}</div><Link className="primary-action" href="/profile/plan" onClick={() => setUpsell(false)}>Scopri PRO<ArrowRight size={18} /></Link></div></BottomSheet> : null}
   </div>;
 }

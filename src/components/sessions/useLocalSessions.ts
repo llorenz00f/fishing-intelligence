@@ -5,7 +5,7 @@ import { disciplines, techniques } from "@/data/catalog";
 import type { FishingSession, SessionEvent } from "@/domain/sessions/types";
 
 export type JournalSession = Pick<FishingSession, "id" | "discipline" | "technique" | "targetSpecies" | "startTime" | "endTime" | "primarySpot" | "conditionScore" | "events"> & { catches: Array<{ id: string }> };
-export function useLocalSessions() {
+export function useLocalSessions(userId: string) {
   const [sessions, setSessions] = useState<JournalSession[]>([]);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -16,18 +16,18 @@ export function useLocalSessions() {
         const database = await openDB("fishing-intelligence-offline", 1, {
           upgrade(db) { if (!db.objectStoreNames.contains("session-events")) db.createObjectStore("session-events", { keyPath: "clientId" }); },
         });
-        const allEvents = await database.getAll("session-events") as SessionEvent[];
+        const allEvents = await database.getAll("session-events") as Array<SessionEvent & { userId?: string }>;
         database.close();
         for (let index = 0; index < localStorage.length; index++) {
           const key = localStorage.key(index);
-          if (!key?.startsWith("session:")) continue;
+          if (!key?.startsWith(`session:${userId}:`)) continue;
           try {
             const value = JSON.parse(localStorage.getItem(key) ?? "{}");
             const discipline = disciplines.find(item => item.code === value.discipline);
             const technique = techniques.find(item => item.code === value.technique && item.discipline === discipline?.code);
             if (!discipline || !technique || typeof value.startTime !== "string" || !Number.isFinite(Date.parse(value.startTime))) continue;
-            const id = key.slice("session:".length);
-            const events = allEvents.filter(event => event.sessionId === id).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+            const id = key.slice(`session:${userId}:`.length);
+            const events = allEvents.filter(event => event.userId === userId && event.sessionId === id).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
             local.push({
               id, discipline: discipline.code, technique: technique.code, startTime: value.startTime,
               endTime: typeof value.endTime === "string" && Number.isFinite(Date.parse(value.endTime)) ? value.endTime : undefined,
@@ -43,6 +43,6 @@ export function useLocalSessions() {
     void read();
     window.addEventListener("storage", read);
     return () => { cancelled = true; window.removeEventListener("storage", read); };
-  }, []);
+  }, [userId]);
   return { sessions, loaded };
 }

@@ -4,8 +4,8 @@ import { MockBathymetryProvider, MockMarineProvider, MockWeatherProvider } from 
 import { OpenMeteoMarineProvider, OpenMeteoWeatherProvider } from "@/infrastructure/providers/open-meteo";
 import type { ProviderBundle } from "@/infrastructure/providers/types";
 
-export function createProviderBundle(): ProviderBundle {
-  if (env.DATA_PROVIDER_MODE === "live") {
+export function createProviderBundle({ allowMock = false }: { allowMock?: boolean } = {}): ProviderBundle {
+  if (!allowMock || process.env.NODE_ENV === "production" || env.DATA_PROVIDER_MODE === "live") {
     return {
       weather: new OpenMeteoWeatherProvider(),
       marine: new OpenMeteoMarineProvider(),

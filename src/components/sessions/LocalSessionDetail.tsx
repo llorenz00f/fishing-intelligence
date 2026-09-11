@@ -5,10 +5,11 @@ import { useLocalSessions } from "./useLocalSessions";
 import { labelForSpecies, labelForTechnique } from "@/data/catalog";
 import { EmptyState, Metric, PageHeader } from "@/components/ui/ProductPrimitives";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import type { FishingSession } from "@/domain/sessions/types";
 const labels = { STRIKE: "Abboccata", CATCH: "Cattura", SPOT_CHANGE: "Cambio spot", NOTE: "Nota", PHOTO: "Foto" };
-export function LocalSessionDetail({ sessionId }: { sessionId: string }) {
-  const { sessions, loaded } = useLocalSessions();
-  const session = sessions.find(item => item.id === sessionId);
+export function LocalSessionDetail({ sessionId, userId, initialSession }: { sessionId: string; userId: string; initialSession?: FishingSession | null }) {
+  const { sessions, loaded } = useLocalSessions(userId);
+  const session = initialSession ?? sessions.find(item => item.id === sessionId);
   if (!loaded) return <LoadingSkeleton kind="sessions" />;
   if (!session) return <EmptyState title="Non troviamo questa uscita"><span>La sessione non e presente su questo dispositivo.</span><Link className="secondary-action" href="/sessions"><ArrowLeft size={18} />Torna al diario</Link></EmptyState>;
   const minutes = session.endTime ? Math.round((Date.parse(session.endTime) - Date.parse(session.startTime)) / 60000) : 0;

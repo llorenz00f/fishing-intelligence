@@ -102,6 +102,7 @@ export function calculateFishingScore(input: FishingScoreInput): FishingScoreRes
   }
 
   return {
+    available: input.environment.dataCoverage > 0,
     finalScore,
     baseScore,
     personalScore: usablePersonalScore,

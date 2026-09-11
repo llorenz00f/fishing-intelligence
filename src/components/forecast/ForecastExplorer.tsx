@@ -39,7 +39,7 @@ export function ForecastStrip({ days, date, best, onSelect }: { days: DailyForec
   return <div className="forecast-strip" aria-label="Confronto giorni">{days.slice(0, 7).map(day => <ForecastDay key={day.date} day={day} selected={day.date === date} best={day.date === best} onSelect={() => onSelect(day)} />)}</div>;
 }
 export function ForecastExplorer({ initialForecast }: { initialForecast: ForecastViewModel }) {
-  const { clearForecast, publishForecast } = useAppearance();
+  const { clearForecast, publishForecast, profile } = useAppearance();
   const initialDay = bestDay(initialForecast.days);
   const [forecast, setForecast] = useState(initialForecast);
   const [date, setDate] = useState(initialDay?.date ?? "");
@@ -50,8 +50,8 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
   const [filters, setFilters] = useState<Filters>({ discipline: initialForecast.discipline, technique: initialForecast.technique, species: initialForecast.species ?? "SPIGOLA", lat: String(initialForecast.location.latitude), lng: String(initialForecast.location.longitude), label: initialForecast.location.label ?? "Area selezionata" });
   const requestRef = useRef(0);
   useEffect(() => {
-    saveForecastLocation({ ...initialForecast.location, label: initialForecast.location.label || "Area selezionata" });
-  }, [initialForecast.location]);
+    saveForecastLocation({ ...initialForecast.location, label: initialForecast.location.label || "Area selezionata" }, profile.userId);
+  }, [initialForecast.location, profile.userId]);
   const day = forecast.days.find(d => d.date === date) ?? forecast.days[0];
   const hour = day?.hours.find(h => h.timestamp === timestamp) ?? day?.hours[0] ?? forecast.current;
   const best = bestDay(forecast.days);
@@ -67,7 +67,7 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
       const data: ForecastViewModel = await response.json();
       if (request !== requestRef.current) return;
       setForecast(data); setFilters(next);
-      saveForecastLocation({ ...data.location, label: data.location.label || "Area selezionata" });
+      saveForecastLocation({ ...data.location, label: data.location.label || "Area selezionata" }, profile.userId);
       const best = bestDay(data.days);
       setDate(best?.date ?? ""); setTimestamp(bestHour(best)?.timestamp ?? data.current.timestamp);
     } catch {

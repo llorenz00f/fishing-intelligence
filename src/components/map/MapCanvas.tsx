@@ -4,8 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as maplibregl from "maplibre-gl";
 import { Anchor, ArrowLeft, ArrowRight, Check, Fish, Layers, LocateFixed, Minus, Plus, Save, Ship, Waves } from "lucide-react";
-import { demoLocation, demoSessions, demoSpots } from "@/data/demo";
 import { labelForDiscipline } from "@/data/catalog";
+import type { SpotView } from "@/domain/account/data";
 import { getDefaultTileProvider } from "@/infrastructure/providers/maps";
 import type { DisciplineCode, LocationPoint, TechniqueCode } from "@/types/product";
 import type { ForecastViewModel } from "@/application/services/forecast-service";
@@ -14,7 +14,6 @@ import { MapBottomSheet, type SheetSnap } from "./MapBottomSheet";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
 import { scoreTone } from "@/components/forecast/ScoreCard";
 
-type SpotView = { id: string; name: string; location: LocationPoint; discipline?: DisciplineCode; notes?: string };
 const techniqueFor: Record<DisciplineCode, TechniqueCode> = { BOAT: "BOTTOM_FISHING", SHORE_SPINNING: "SHORE_SPINNING", SURFCASTING: "STANDARD_SURFCASTING", SPEARFISHING: "SPEAR_AMBUSH" };
 export function FishingSpotMarker({ discipline }: { discipline?: DisciplineCode }) {
   const Icon = discipline === "BOAT" ? Ship : discipline === "SURFCASTING" ? Waves : discipline === "SPEARFISHING" ? Anchor : Fish;
@@ -23,10 +22,10 @@ export function FishingSpotMarker({ discipline }: { discipline?: DisciplineCode 
 export function FloatingMapControl({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
   return <button className="icon-action" type="button" onClick={onClick} aria-label={label} title={label}>{children}</button>;
 }
-export default function MapCanvas() {
+export default function MapCanvas({ initialSpots, location, sessionCounts }: { initialSpots: SpotView[]; location: LocationPoint | null; sessionCounts: Record<string, number> }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const [spots, setSpots] = useState<SpotView[]>([...demoSpots]);
+  const [spots, setSpots] = useState<SpotView[]>(initialSpots);
   const [selected, setSelected] = useState<SpotView | null>(null);
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [name, setName] = useState("");
@@ -45,7 +44,8 @@ export default function MapCanvas() {
     maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
     const map = new maplibregl.Map({
       container: containerRef.current, style: getDefaultTileProvider().styleUrl,
-      center: [demoLocation.longitude, demoLocation.latitude], zoom: 12,
+      center: [location?.longitude ?? initialSpots[0]?.location.longitude ?? 0, location?.latitude ?? initialSpots[0]?.location.latitude ?? 0],
+      zoom: location || initialSpots.length ? 12 : 2,
       attributionControl: { compact: true },
       locale: { "AttributionControl.ToggleAttribution": "Sources cartografiche" },
     });
@@ -53,7 +53,8 @@ export default function MapCanvas() {
     let initialized = false;
     function frameSpots() {
       const bounds = new maplibregl.LngLatBounds();
-      demoSpots.forEach(spot => bounds.extend([spot.location.longitude, spot.location.latitude]));
+      initialSpots.forEach(spot => bounds.extend([spot.location.longitude, spot.location.latitude]));
+      if (!initialSpots.length) return;
       const height = map.getContainer().clientHeight;
       const shortViewport = height < 600;
       setSnap(shortViewport ? "collapsed" : "medium");
@@ -79,7 +80,7 @@ export default function MapCanvas() {
     });
     const resize = new ResizeObserver(() => { map.resize(); if (initialized && !cameraMoved.current) frameSpots(); }); resize.observe(containerRef.current);
     return () => { resize.disconnect(); mapRef.current = null; map.remove(); };
-  }, []);
+  }, [initialSpots, location]);
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     const map = mapRef.current;
@@ -129,10 +130,16 @@ export default function MapCanvas() {
       setMessage("Posizione aggiornata.");
     }, () => setMessage("Posizione non disponibile. Puoi scegliere un punto sulla mappa."));
   }
-  function saveSpot() {
+  async function saveSpot() {
     if (!point) return;
-    const spot = { id: crypto.randomUUID(), name: name.trim() || `Spot ${spots.length + 1}`, location: { latitude: point.lat, longitude: point.lng }, discipline: "SHORE_SPINNING" as const };
-    setSpots(current => [...current, spot]); selectSpot(spot); setMessage("Punto aggiunto alla mappa.");
+    const candidate = { name: name.trim() || `Spot ${spots.length + 1}`, location: { latitude: point.lat, longitude: point.lng, label: name.trim() || `Spot ${spots.length + 1}` }, discipline: "SHORE_SPINNING" as const };
+    try {
+      const response = await fetch("/api/spots", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(candidate) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      const spot: SpotView = { ...candidate, id: result.id };
+      setSpots(current => [...current, spot]); selectSpot(spot); setMessage("Punto aggiunto alla mappa.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Spot non salvato. Riprova."); }
   }
   function changeStyle(marine: boolean) {
     setMarineStyle(marine); setLayers(false);
@@ -149,7 +156,7 @@ export default function MapCanvas() {
       }
     }
   }
-  const priorSessions = selected ? demoSessions.filter(session => session.primarySpot === selected.name).length : 0;
+  const priorSessions = selected ? sessionCounts[selected.name] ?? 0 : 0;
   const conditions = forecast?.current.snapshot;
   return <div className="map-shell">
     <div ref={containerRef} className="map-canvas" aria-label="Mappa dei tuoi spot" />
@@ -166,7 +173,7 @@ export default function MapCanvas() {
       <div className="map-sheet-heading"><div><h2>{selected?.name ?? (point ? "Nuovo spot" : "I tuoi spot")}</h2><p>{selected ? labelForDiscipline(selected.discipline ?? "SHORE_SPINNING") : point ? "Punto selezionato" : `${spots.length} luoghi privati`}</p></div>
         {selected || point ? <button className="icon-action" onClick={() => { setSelected(null); setPoint(null); }} aria-label="Torna agli spot" title="Torna agli spot"><ArrowLeft size={18} /></button> : <span className="spot-symbol"><Waves size={22} /></span>}
       </div>
-      {snap !== "collapsed" ? point ? <div className="stack"><p className="help-text">{point.lat.toFixed(5)}, {point.lng.toFixed(5)}</p><label>Nome dello spot<input value={name} onChange={event => setName(event.target.value)} placeholder={`Spot ${spots.length + 1}`} /></label><button className="primary-action" onClick={saveSpot}><Save size={18} />Salva spot</button></div> : selected ? <div className="spot-details">
+      {snap !== "collapsed" ? point ? <div className="stack"><p className="help-text">{point.lat.toFixed(5)}, {point.lng.toFixed(5)}</p><label>Nome dello spot<input value={name} onChange={event => setName(event.target.value)} placeholder={`Spot ${spots.length + 1}`} /></label><button className="primary-action" onClick={() => void saveSpot()}><Save size={18} />Salva spot</button></div> : selected ? <div className="spot-details">
         {!forecast && !forecastError ? <div className="skeleton skeleton-item" aria-label="Caricamento condizioni spot" /> : <div className="grid-2">
           <div className="metric"><span>Fishing Score</span><strong className="spot-score" data-score-tone={scoreTone(forecast?.current.score.finalScore)}>{forecast?.current.score.finalScore ?? "N/D"}</strong></div>
           <div className="metric"><span>Profondita</span><strong>{conditions?.marine.depthM !== undefined ? `${conditions.marine.depthM} m` : "Non disponibile"}</strong></div>
@@ -175,7 +182,7 @@ export default function MapCanvas() {
         </div>}
         {forecastError ? <p className="help-text">Alcuni dati del mare non sono momentaneamente disponibili.</p> : null}
         <Link className="primary-action" href={`/forecast?lat=${selected.location.latitude}&lng=${selected.location.longitude}&label=${encodeURIComponent(selected.name)}&discipline=${selected.discipline ?? "SHORE_SPINNING"}&technique=${techniqueFor[selected.discipline ?? "SHORE_SPINNING"]}`}>Previsioni dello spot<ArrowRight size={18} /></Link>
-      </div> : <div className="spot-list">{spots.map(spot => <button className="spot-card" key={spot.id} onClick={() => selectSpot(spot)}><span className="spot-symbol"><FishingSpotMarker discipline={spot.discipline} /></span><div><strong>{spot.name}</strong><small>{labelForDiscipline(spot.discipline ?? "SHORE_SPINNING")}</small></div><ArrowRight size={16} /></button>)}</div> : null}
+      </div> : spots.length ? <div className="spot-list">{spots.map(spot => <button className="spot-card" key={spot.id} onClick={() => selectSpot(spot)}><span className="spot-symbol"><FishingSpotMarker discipline={spot.discipline} /></span><div><strong>{spot.name}</strong><small>{labelForDiscipline(spot.discipline ?? "SHORE_SPINNING")}</small></div><ArrowRight size={16} /></button>)}</div> : <div className="empty-state"><h3>Non hai ancora salvato nessuno spot.</h3><p>Seleziona un punto sulla mappa per aggiungerlo al tuo spazio privato.</p></div> : null}
     </MapBottomSheet>
     <BottomSheet open={layers} onClose={() => setLayers(false)} title="Livelli mappa"><div className="choice-grid"><button className="choice-card" data-active={marineStyle} aria-pressed={marineStyle} onClick={() => changeStyle(true)}><Waves size={24} /><strong>Mappa marina</strong>{marineStyle ? <Check size={16} /> : null}</button><button className="choice-card" data-active={!marineStyle} aria-pressed={!marineStyle} onClick={() => changeStyle(false)}><Layers size={24} /><strong>Mappa stradale</strong>{!marineStyle ? <Check size={16} /> : null}</button></div><p className="help-text">Le curve di profondita non sono ancora disponibili per questa zona.</p></BottomSheet>
   </div>;

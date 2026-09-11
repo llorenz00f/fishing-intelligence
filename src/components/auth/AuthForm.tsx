@@ -5,7 +5,6 @@ import type { FormEvent } from "react";
 import Link from "next/link";
 import { Anchor, Eye, EyeOff, Mail, Waves } from "lucide-react";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
-import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser";
 
 type AuthMode = "login" | "register" | "forgot";
 
@@ -33,6 +32,8 @@ const modeCopy: Record<AuthMode, { title: string; action: string; helper: string
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isBetaTester, setIsBetaTester] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,25 +41,17 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) {
-      setMessage("L'accesso non e disponibile al momento. Puoi comunque esplorare l'anteprima.");
-      return;
-    }
-
+    if (mode === "register" && password !== confirmPassword) { setMessage("Le password non coincidono."); return; }
     setPending(true);
     setMessage(null);
     try {
-      const result = mode === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : mode === "register"
-          ? await supabase.auth.signUp({ email, password })
-          : await supabase.auth.resetPasswordForEmail(email);
-      if (result.error) {
-        setMessage("Non riesco a completare l'operazione ora. Controlla i dati e riprova.");
-        return;
-      }
-      setMessage(mode === "forgot" ? "Controlla la tua email." : "Accesso riuscito. Puoi completare il profilo.");
+      const action = mode === "register" ? "signup" : mode === "forgot" ? "recover" : "login";
+      const response = await fetch(`/api/auth/${action}`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mode === "register" ? { email, password, confirmPassword, isBetaTester } : mode === "forgot" ? { email } : { email, password }) });
+      const result = await response.json();
+      if (!response.ok) { setMessage(result.error || "Accesso non riuscito. Riprova."); return; }
+      if (result.next === "/dashboard" || result.next === "/onboarding") { window.location.assign(result.next); return; }
+      setMessage(result.message || "Controlla la tua email e conferma l'account per completare la registrazione.");
     } catch {
       setMessage("Connessione interrotta. I tuoi dati restano nel modulo, puoi riprovare.");
     } finally {
@@ -107,18 +100,23 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                   type={showPassword ? "text" : "password"}
                   autoComplete={mode === "register" ? "new-password" : "current-password"}
                   required
-                  minLength={8}
+                  minLength={mode === "register" ? 8 : 1}
+                  maxLength={128}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 /><button className="icon-action" type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Nascondi password" : "Mostra password"} title={showPassword ? "Nascondi password" : "Mostra password"}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
               </label>
             ) : null}
+            {mode === "register" ? <>
+              <label>Conferma password<input type={showPassword ? "text" : "password"} autoComplete="new-password" required minLength={8} maxLength={128} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} /></label>
+              <label className="beta-checkbox"><input type="checkbox" checked={isBetaTester} onChange={event => setIsBetaTester(event.target.checked)} /><span><strong>Beta tester</strong><small>Voglio partecipare al programma beta e testare in anteprima le funzionalita dell&apos;app.</small></span></label>
+            </> : null}
             <button className="primary-action" type="submit" disabled={pending}>
               <Mail size={18} />
               {pending ? "Attendi..." : copy.action}
             </button>
           </form>
-          {message ? <p className="form-message">{message}</p> : null}
+          {message ? <p className="form-message" role="status">{message}</p> : null}
           <nav className="auth-links" aria-label="Link account">
             {mode !== "login" ? <Link href="/login">Accedi</Link> : null}
             {mode !== "register" ? <Link href="/register">Crea account</Link> : null}

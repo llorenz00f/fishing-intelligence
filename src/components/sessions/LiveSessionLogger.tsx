@@ -15,7 +15,7 @@ const eventIcons: Record<SessionEventType, ElementType> = { STRIKE: Radio, CATCH
 export function LiveSessionAction({ label, icon: Icon, primary, wide, onClick, disabled }: { label: string; icon: ElementType; primary?: boolean; wide?: boolean; onClick: () => void; disabled?: boolean }) {
   return <button className={`live-action${primary ? " live-action--primary" : ""}${wide ? " live-action--wide" : ""}`} type="button" onClick={onClick} disabled={disabled}><Icon size={28} />{label}</button>;
 }
-export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: string; initialSession?: StoredSession }) {
+export function LiveSessionLogger({ sessionId, userId, initialSession }: { sessionId: string; userId: string; initialSession?: StoredSession }) {
   const [session, setSession] = useState<StoredSession>(initialSession ?? {});
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<SessionEvent[]>([]);
@@ -27,7 +27,7 @@ export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: st
   const [saving, setSaving] = useState(false);
   const finishing = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { pendingEvents, storedEvents, enqueue, sync } = useOfflineQueue(sessionId);
+  const { pendingEvents, storedEvents, enqueue, sync } = useOfflineQueue(userId, sessionId);
   const duration = useDuration(session.startTime, session.endTime);
   const ended = Boolean(session.endTime);
   const eventMap = new Map(events.map(event => [event.clientId, event]));
@@ -37,15 +37,15 @@ export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: st
   const strikes = displayedEvents.filter(event => event.type === "STRIKE").length;
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const loaded = { ...initialSession, ...loadSession(sessionId) };
+      const loaded = { ...initialSession, ...loadSession(userId, sessionId) };
       loaded.startTime ??= new Date().toISOString();
       setSession(loaded); setReady(true); setOnline(navigator.onLine);
-      try { localStorage.setItem(`session:${sessionId}`, JSON.stringify(loaded)); } catch { setToast("Il dispositivo non consente di conservare i dettagli della sessione."); }
+      try { localStorage.setItem(`session:${userId}:${sessionId}`, JSON.stringify(loaded)); } catch { setToast("Il dispositivo non consente di conservare i dettagli della sessione."); }
     }, 0);
     const onOnline = () => setOnline(true); const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline); window.addEventListener("offline", onOffline);
     return () => { window.clearTimeout(timer); window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); if (toastTimer.current) clearTimeout(toastTimer.current); };
-  }, [sessionId, initialSession]);
+  }, [sessionId, userId, initialSession]);
   function confirm(message: string) {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -72,7 +72,9 @@ export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: st
     const success = await log("NOTE", "Sessione terminata.");
     if (success) {
       const updated = { ...session, endTime: new Date().toISOString() };
-      try { localStorage.setItem(`session:${sessionId}`, JSON.stringify(updated)); } catch { confirm("Sessione chiusa. Il riepilogo resta disponibile finche questa pagina e aperta."); }
+      const response = await fetch(`/api/sessions/${sessionId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endTime: updated.endTime }) }).catch(() => null);
+      if (!response?.ok) { confirm("Sessione chiusa sul dispositivo. La sincronizzazione verra ritentata quando torni online."); }
+      try { localStorage.setItem(`session:${userId}:${sessionId}`, JSON.stringify(updated)); } catch { confirm("Sessione chiusa. Il riepilogo resta disponibile finche questa pagina e aperta."); }
       setSession(updated); setSheet(null);
     }
     setSaving(false); finishing.current = false;
@@ -87,7 +89,7 @@ export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: st
     if (await log("SPOT_CHANGE", spot.trim())) {
       const updated = { ...session, spot: spot.trim() };
       setSession(updated); setSheet(null);
-      try { localStorage.setItem(`session:${sessionId}`, JSON.stringify(updated)); } catch { confirm("Cambio spot registrato. Dettagli disponibili in questa pagina."); }
+      try { localStorage.setItem(`session:${userId}:${sessionId}`, JSON.stringify(updated)); } catch { confirm("Cambio spot registrato. Dettagli disponibili in questa pagina."); }
     }
     setSaving(false);
   }
@@ -113,8 +115,8 @@ export function LiveSessionLogger({ sessionId, initialSession }: { sessionId: st
     {toast ? <div className="toast" role="status"><Check size={17} />{toast}</div> : null}
   </section>;
 }
-function loadSession(sessionId: string): StoredSession {
-  try { return JSON.parse(localStorage.getItem(`session:${sessionId}`) ?? "{}") as StoredSession; } catch { return {}; }
+function loadSession(userId: string, sessionId: string): StoredSession {
+  try { return JSON.parse(localStorage.getItem(`session:${userId}:${sessionId}`) ?? "{}") as StoredSession; } catch { return {}; }
 }
 function useDuration(start?: string, end?: string) {
   const [now, setNow] = useState(0);

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { ForecastService } from "@/application/services/forecast-service";
-import { createProviderBundle } from "@/infrastructure/providers/provider-factory";
+import { getUserForecast } from "@/application/services/user-forecast";
+import { getAccount } from "@/infrastructure/supabase/account";
+import { canUseFeature } from "@/domain/account/access";
+import { apiError, privateJson } from "@/lib/api";
 
 const querySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
@@ -28,28 +30,25 @@ const querySchema = z.object({
     ])
     .default("SHORE_SPINNING"),
   species: z.string().optional(),
-  days: z.coerce.number().min(1).max(7).default(7),
+  days: z.coerce.number().int().min(1).max(14).default(7),
 });
 
 export async function GET(request: Request) {
+  try {
+  const account = await getAccount();
+  if (!account) return privateJson({ error: "Accedi per consultare le previsioni." }, 401);
   const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams.entries()));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid forecast request", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const service = new ForecastService(createProviderBundle());
-  const forecast = await service.getForecast({
-    location: {
+  if (parsed.data.days > 7 && !canUseFeature(account.profile, "ADVANCED_FORECAST")) return privateJson({ error: "Le previsioni estese richiedono PRO." }, 403);
+  const forecast = await getUserForecast({
       latitude: parsed.data.lat,
       longitude: parsed.data.lng,
       label: parsed.data.label,
-    },
-    discipline: parsed.data.discipline,
-    technique: parsed.data.technique,
-    species: parsed.data.species,
-    start: new Date().toISOString(),
-    days: parsed.data.days,
-  });
+    }, parsed.data.discipline, parsed.data.technique, parsed.data.species, parsed.data.days);
 
-  return NextResponse.json(forecast);
+  return privateJson(forecast);
+  } catch (error) { return apiError(error); }
 }

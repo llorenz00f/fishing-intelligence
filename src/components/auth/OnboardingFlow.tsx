@@ -5,15 +5,19 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Anchor, Check, ChevronLeft, ChevronRight, Fish, MapPin, Save, Ship, Waves } from "lucide-react";
 import { disciplines, species } from "@/data/catalog";
+import type { AccountProfile } from "@/domain/account/access";
 
 const steps = ["Profilo", "Area", "Discipline", "Specie", "Unita"];
 const questions = ["Come ti chiami?", "Qual e il tuo mare?", "Come peschi?", "Che specie cerchi?", "Le tue unita di misura."];
 const disciplineIcons = { SURFCASTING: Waves, SHORE_SPINNING: Fish, BOAT: Ship, SPEARFISHING: Anchor };
 
-export function OnboardingFlow() {
+export function OnboardingFlow({ account }: { account: AccountProfile }) {
   const [step, setStep] = useState(0);
-  const [displayName, setDisplayName] = useState("");
-  const [area, setArea] = useState("Castiglione della Pescaia");
+  const [displayName, setDisplayName] = useState(account.displayName);
+  const [area, setArea] = useState(account.homeLocation?.label ?? "");
+  const [latitude, setLatitude] = useState(account.homeLocation ? String(account.homeLocation.latitude) : "");
+  const [longitude, setLongitude] = useState(account.homeLocation ? String(account.homeLocation.longitude) : "");
+  const [pending, setPending] = useState(false);
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(["SHORE_SPINNING"]);
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>(["SPIGOLA"]);
   const [saved, setSaved] = useState(false);
@@ -24,27 +28,25 @@ export function OnboardingFlow() {
     setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
   }
 
-  function save() {
+  async function save() {
+    setPending(true); setMessage("");
     try {
-    localStorage.setItem(
-      "fishing-intelligence:onboarding",
-      JSON.stringify({
+    const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         displayName,
-        area,
-        selectedDisciplines,
-        selectedSpecies,
+        homeLocation: latitude && longitude && area.trim() ? { latitude: Number(latitude), longitude: Number(longitude), label: area.trim() } : null,
+        disciplines: selectedDisciplines,
+        species: selectedSpecies,
         preferredUnits: {
           system: "metric",
           wind: "knots",
           temperature: "celsius",
         },
         onboardingCompleted: true,
-      }),
-    );
+      }) });
+    if (!response.ok) { const result = await response.json(); throw new Error(result.error); }
     setSaved(true);
-    } catch {
-      setMessage("Il dispositivo non consente di salvare le preferenze. Riprova dopo aver controllato lo spazio disponibile.");
-    }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Profilo non salvato. Riprova."); }
+    finally { setPending(false); }
   }
 
   return (
@@ -71,7 +73,7 @@ export function OnboardingFlow() {
           <p className="muted">Il nome serve solo a personalizzare il tuo spazio.</p>
           <label>
             Nome visualizzato
-            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Lorenzo" />
+            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={80} required />
           </label>
         </div>
       ) : null}
@@ -83,9 +85,10 @@ export function OnboardingFlow() {
             Area principale di pesca
             <input value={area} onChange={(event) => setArea(event.target.value)} />
           </label>
+          <div className="grid-2"><label>Latitudine<input type="number" step="any" min={-90} max={90} value={latitude} onChange={event => setLatitude(event.target.value)} /></label><label>Longitudine<input type="number" step="any" min={-180} max={180} value={longitude} onChange={event => setLongitude(event.target.value)} /></label></div>
           <button className="secondary-action" type="button" onClick={() => {
             if (!navigator.geolocation) { setMessage("Posizione non disponibile."); return; }
-            navigator.geolocation.getCurrentPosition(position => { setArea(`${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`); setMessage(""); }, () => setMessage("Non riusciamo a leggere la posizione. Puoi indicare la tua zona."));
+            navigator.geolocation.getCurrentPosition(position => { setArea("La mia area"); setLatitude(String(position.coords.latitude)); setLongitude(String(position.coords.longitude)); setMessage(""); }, () => setMessage("Non riusciamo a leggere la posizione. Puoi indicare le coordinate o scegliere l'area piu tardi."));
           }}>
             <MapPin size={18} />
             Usa posizione
@@ -147,7 +150,7 @@ export function OnboardingFlow() {
       ) : null}
 
       {message ? <p className="form-message" role="status">{message}</p> : null}
-      {saved ? <p className="form-message">Le tue preferenze sono salvate su questo dispositivo.</p> : null}
+      {saved ? <p className="form-message" role="status">Le tue preferenze sono salvate nel profilo.</p> : null}
 
       <div className="button-row button-row--stretch">
         <button className="secondary-action" type="button" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
@@ -155,14 +158,14 @@ export function OnboardingFlow() {
           Indietro
         </button>
         {step < steps.length - 1 ? (
-          <button className="primary-action" type="button" onClick={() => setStep(step + 1)}>
+          <button className="primary-action" type="button" disabled={step === 0 && !displayName.trim()} onClick={() => setStep(step + 1)}>
             Avanti
             <ChevronRight size={18} />
           </button>
         ) : (
-          <button className="primary-action" type="button" onClick={save}>
+          <button className="primary-action" type="button" onClick={save} disabled={pending || !displayName.trim()}>
             <Save size={18} />
-            Salva profilo
+            {pending ? "Salvataggio..." : "Salva profilo"}
           </button>
         )}
       </div>

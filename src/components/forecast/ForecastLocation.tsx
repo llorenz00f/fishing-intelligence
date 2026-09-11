@@ -7,9 +7,9 @@ import { saveForecastLocation } from "@/domain/forecast/location";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { useAppearance } from "@/components/appearance/ThemeProvider";
 
-export function ForecastLocation({ location, onSelect, autoRefresh = false }: { location: LocationPoint; onSelect?: (value: LocationPoint) => void; autoRefresh?: boolean }) {
+export function ForecastLocation({ location, onSelect, autoRefresh = false }: { location: LocationPoint | null; onSelect?: (value: LocationPoint) => void; autoRefresh?: boolean }) {
   const router = useRouter();
-  const { clearForecast } = useAppearance();
+  const { clearForecast, profile } = useAppearance();
   const [open, setOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -25,7 +25,7 @@ export function ForecastLocation({ location, onSelect, autoRefresh = false }: { 
   function select(value: LocationPoint) {
     setMessage(""); setOpen(false);
     if (onSelect) { onSelect(value); return; }
-    saveForecastLocation({ ...value, label: value.label || "Area selezionata" });
+    saveForecastLocation({ ...value, label: value.label || "Area selezionata" }, profile.userId);
     clearForecast(); startTransition(() => router.refresh());
   }
   function locate() {
@@ -48,8 +48,8 @@ export function ForecastLocation({ location, onSelect, autoRefresh = false }: { 
     {open ? <BottomSheet open onClose={() => setOpen(false)} title="Posizione meteo"><form className="stack" onSubmit={event => {
       event.preventDefault(); const form = new FormData(event.currentTarget);
       select({ latitude: Number(form.get("latitude")), longitude: Number(form.get("longitude")), label: String(form.get("label")) });
-    }}><label>Localita<input name="label" defaultValue={location.label} maxLength={100} required /></label>
-      <div className="grid-2"><label>Latitudine<input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={location.latitude} required /></label><label>Longitudine<input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={location.longitude} required /></label></div>
+    }}><label>Localita<input name="label" defaultValue={location?.label} maxLength={100} required /></label>
+      <div className="grid-2"><label>Latitudine<input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={location?.latitude} required /></label><label>Longitudine<input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={location?.longitude} required /></label></div>
       <button className="primary-action" type="submit"><MapPin size={18} />Usa questa posizione</button></form></BottomSheet> : null}
   </>;
 }

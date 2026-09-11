@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SubscriptionPlan } from "@/types/product";
+import { canUseFeature } from "@/domain/account/access";
 
 export type { SubscriptionPlan } from "@/types/product";
 
@@ -55,7 +56,7 @@ export type AppearanceProfileResponse =
     };
 
 export function isPremiumPlan(plan: unknown): plan is "PRO" | "CAPTAIN" {
-  return plan === "PRO" || plan === "CAPTAIN";
+  return canUseFeature({ plan }, "CUSTOM_THEMES");
 }
 
 export const canUsePremiumAppearance = isPremiumPlan;

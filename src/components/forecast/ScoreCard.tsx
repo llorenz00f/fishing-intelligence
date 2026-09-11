@@ -25,6 +25,7 @@ export function ScoreRing({ score }: { score: number }) {
 export function ScoreHero({ title, score, location, technique, species, window, cta, children }: {
   title: string; score: FishingScoreResult; location: string; technique: string; species: string; window: ReactNode; cta?: ReactNode; children?: ReactNode;
 }) {
+  if (score.available === false) return <section className="score-hero" aria-label={title}><p className="eyebrow">{title}</p><h2>Dato non disponibile</h2><p>Le condizioni del mare non sono disponibili per questa posizione. Riprova tra poco.</p>{cta}</section>;
   return <section className="score-hero" aria-label={title}>
     <div className="hero-overline"><span>{title}</span><span className="confidence"><ShieldCheck size={14} />{score.confidence}% affidabilita</span></div>
     <div className="score-stage">

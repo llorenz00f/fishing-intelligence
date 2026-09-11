@@ -311,6 +311,20 @@ summary::-webkit-details-marker { display: none; }
 .bar-track { height: 5px; background: var(--surface-strong); border-radius: var(--radius-pill); overflow: hidden; }
 .bar-fill { background: var(--ocean); width: calc(var(--score) * 1%); height: 100%; border-radius: inherit; transition: width var(--motion-base); }
 .personal-insight-card { padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-md); border-top: 2px solid var(--amber); background: var(--surface); }
+.account-section { display: grid; gap: 16px; padding-block: 24px; border-bottom: 1px solid var(--line); }
+.account-section h2 { font-size: 1.125rem; }
+.account-section .section-heading { flex-wrap: wrap; gap: 12px; }
+.account-section input { min-width: 0; width: 100%; }
+.account-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.account-badge { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; color: var(--accent); }
+.account-units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.account-units dt { color: var(--muted); font-size: .875rem; }
+.account-units dd { margin: 6px 0 0; font-weight: 600; }
+.beta-checkbox { display: flex; align-items: flex-start; gap: 12px; }
+.beta-checkbox input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 3px; }
+.beta-checkbox span { display: grid; gap: 6px; }
+.beta-checkbox small { color: var(--muted); font-weight: 400; line-height: 1.5; }
+.premium-badge { display: inline-block; color: var(--accent); font-weight: 700; }
 .personal-insight-card .eyebrow { color: var(--amber); }
 .personal-insight-card p:last-child { color: var(--muted); font-size: var(--text-label); margin-top: var(--space-3); }
 .personal-insight-card p > svg { float: left; margin: .2rem .6rem 0 0; color: var(--amber); }

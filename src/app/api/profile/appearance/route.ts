@@ -10,17 +10,6 @@ import {
   type SubscriptionPlan,
 } from "@/domain/appearance/preferences";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server";
-import { env } from "@/lib/env";
-
-function localProfile(): AppearanceProfileResponse {
-  return {
-    userId: null,
-    plan: env.PREMIUM_PREVIEW ? "CAPTAIN" : "FREE",
-    preferences: null,
-    storage: "local",
-    displayName: null,
-  };
-}
 
 const preferenceColumns =
   "theme_id,dynamic_weather_theme_enabled,ambient_effect_intensity,appearance_mode,reduced_motion";
@@ -96,7 +85,8 @@ export async function GET() {
   try {
     const auth = await authenticate();
     if (auth.kind === "error") return auth.response;
-    if (auth.kind !== "authenticated") return json(localProfile());
+    if (auth.kind === "unconfigured") return unavailable();
+    if (auth.kind === "anonymous") return unauthorized();
 
     const { data, error } = await auth.supabase
       .from("appearance_preferences")

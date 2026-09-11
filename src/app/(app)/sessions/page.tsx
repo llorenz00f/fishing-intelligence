@@ -1,3 +1,4 @@
-import { demoSessions } from "@/data/demo";
 import { SessionJournal } from "@/components/sessions/SessionJournal";
-export default function SessionsPage() { return <SessionJournal sessions={demoSessions} />; }
+import { getSessions } from "@/infrastructure/repositories/user-data";
+import { requireAccount } from "@/infrastructure/supabase/account";
+export default async function SessionsPage() { const account = await requireAccount(); return <SessionJournal sessions={await getSessions()} userId={account.user.id} />; }

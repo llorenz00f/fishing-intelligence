@@ -6,6 +6,7 @@ import type { SessionEvent } from "@/domain/sessions/types";
 
 const dbName = "fishing-intelligence-offline";
 const storeName = "session-events";
+type OfflineEvent = SessionEvent & { userId: string };
 
 async function db() {
   return openDB(dbName, 1, {
@@ -17,30 +18,31 @@ async function db() {
   });
 }
 
-export function useOfflineQueue(sessionId: string) {
+export function useOfflineQueue(userId: string, sessionId: string) {
   const [pendingEvents, setPendingEvents] = useState<SessionEvent[]>([]);
   const [storedEvents, setStoredEvents] = useState<SessionEvent[]>([]);
 
   const refresh = useCallback(async () => {
     const database = await db();
-    const all = (await database.getAll(storeName)) as SessionEvent[];
-    setStoredEvents(all.filter((event) => event.sessionId === sessionId));
-    setPendingEvents(all.filter((event) => event.sessionId === sessionId && !event.synced));
-  }, [sessionId]);
+    const all = (await database.getAll(storeName)) as OfflineEvent[];
+    const owned = all.filter((event) => event.userId === userId && event.sessionId === sessionId);
+    setStoredEvents(owned);
+    setPendingEvents(owned.filter((event) => !event.synced));
+  }, [sessionId, userId]);
 
   const enqueue = useCallback(
     async (event: SessionEvent) => {
       const database = await db();
-      await database.put(storeName, event);
+      await database.put(storeName, { ...event, userId });
       await refresh();
     },
-    [refresh],
+    [refresh, userId],
   );
 
   const sync = useCallback(async () => {
     const database = await db();
-    const all = ((await database.getAll(storeName)) as SessionEvent[]).filter(
-      (event) => event.sessionId === sessionId && !event.synced,
+    const all = ((await database.getAll(storeName)) as OfflineEvent[]).filter(
+      (event) => event.userId === userId && event.sessionId === sessionId && !event.synced,
     );
     if (!all.length || !navigator.onLine) return;
 
@@ -52,7 +54,7 @@ export function useOfflineQueue(sessionId: string) {
     if (!response?.ok) return;
     await Promise.all(all.map((event) => database.put(storeName, { ...event, synced: true })));
     await refresh();
-  }, [refresh, sessionId]);
+  }, [refresh, sessionId, userId]);
 
   useEffect(() => {
     const initialRefresh = window.setTimeout(() => {

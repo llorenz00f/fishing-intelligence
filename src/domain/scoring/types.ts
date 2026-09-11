@@ -47,6 +47,7 @@ export type FishingScoreInput = {
 };
 
 export type FishingScoreResult = {
+  available?: boolean;
   finalScore: number;
   baseScore: number;
   personalScore: number | null;
