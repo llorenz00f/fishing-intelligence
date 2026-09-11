@@ -22,10 +22,10 @@ const Context = createContext<AppearanceContext | null>(null);
 const guest: Profile = { userId: null, plan: "FREE", storage: "local" };
 const cacheKey = (userId: string | null) => `fi:appearance:${userId ?? "guest"}`;
 
-function readCache(userId: string | null, reduced: boolean): AppearancePreferences {
+function readCache(userId: string | null, reduced: boolean, plan: SubscriptionPlan = "FREE"): AppearancePreferences {
   try {
     const raw = localStorage.getItem(cacheKey(userId));
-    if (raw) return normalizeAppearancePreferences(JSON.parse(raw));
+    if (raw) return normalizeAppearancePreferences(JSON.parse(raw), plan);
     const legacy = !userId ? localStorage.getItem("fishing-theme") : null;
     return { ...defaultAppearancePreferences, ambientEffectIntensity: reduced ? "reduced" : "standard", appearanceMode: legacy === "light" ? "light" : "dark" };
   } catch { return { ...defaultAppearancePreferences, ambientEffectIntensity: reduced ? "reduced" : "standard" }; }
@@ -61,7 +61,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const data = await response.json() as Profile & { preferences?: AppearancePreferences | null };
       if (request !== generation.current) return;
       const nextProfile: Profile = { userId: data.userId, plan: data.plan, displayName: data.displayName, storage: data.storage };
-      const cached = readCache(data.userId, reduced);
+      const cached = readCache(data.userId, reduced, data.plan);
       let next = data.preferences ? normalizeAppearancePreferences(data.preferences, data.plan) : cached;
       if (!canUsePremiumAppearance(data.plan)) next = { ...next, themeId: "deep-ocean", dynamicWeatherThemeEnabled: false };
       currentProfile.current = nextProfile;
@@ -71,7 +71,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       if (request !== generation.current) return;
       if (!currentProfile.current.userId) {
-        const next = { ...readCache(null, reduced), themeId: "deep-ocean" as const, dynamicWeatherThemeEnabled: false };
+        const next = { ...readCache(null, reduced, currentProfile.current.plan), themeId: "deep-ocean" as const, dynamicWeatherThemeEnabled: false };
         currentPreferences.current = saved.current = next;
         setPreferences(next);
       }

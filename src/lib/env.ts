@@ -11,6 +11,10 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  PREMIUM_PREVIEW: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   STRIPE_SECRET_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
   STRIPE_WEBHOOK_SECRET: z.string().optional().or(z.literal("")),
@@ -28,6 +32,7 @@ export const env = envSchema.parse({
   DATA_PROVIDER_MODE: process.env.DATA_PROVIDER_MODE,
   OPEN_METEO_API_KEY: process.env.OPEN_METEO_API_KEY,
   BILLING_ENABLED: process.env.BILLING_ENABLED,
+  PREMIUM_PREVIEW: process.env.PREMIUM_PREVIEW,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,

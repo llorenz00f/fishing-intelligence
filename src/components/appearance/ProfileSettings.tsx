@@ -15,7 +15,7 @@ export function ProfileSettings() {
     if (result?.error) setMessage("Uscita non riuscita. Riprova."); else await refreshProfile();
   }
   return <div className="profile-page"><header className="page-title"><h1>Profilo</h1></header>
-    <div className="profile-identity"><span className="profile-avatar"><UserRound size={28} /></span><div><h2>{profile.displayName || "Il tuo spazio personale"}</h2><p className="muted">{profile.userId ? `Piano ${profile.plan}` : "Modalita ospite"}</p></div></div>
+    <div className="profile-identity"><span className="profile-avatar"><UserRound size={28} /></span><div><h2>{profile.displayName || "Il tuo spazio personale"}</h2><p className="muted">{profile.userId ? `Piano ${profile.plan}` : profile.plan === "CAPTAIN" ? "Preview premium locale" : "Modalita ospite"}</p></div></div>
     <nav className="profile-settings-links" aria-label="Impostazioni profilo"><Link href="/profile/appearance"><Palette size={22} /><span><strong>Aspetto</strong><small>{getTheme(preferences.themeId).name}</small></span><ArrowRight size={19} /></Link><Link href="/profile/plan"><Crown size={22} /><span><strong>Il tuo piano</strong><small>{profile.plan}</small></span><ArrowRight size={19} /></Link></nav>
     {profile.userId ? <button className="secondary-action" onClick={signOut}><LogOut size={18} />Esci</button> : <Link href="/login" className="primary-action">Accedi al tuo profilo<ArrowRight size={18} /></Link>}
     {message ? <p role="alert">{message}</p> : null}

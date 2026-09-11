@@ -41,7 +41,7 @@ export const defaultAppearancePreferences = DEFAULT_APPEARANCE_PREFERENCES;
 export type AppearanceProfileResponse =
   | {
       userId: null;
-      plan: "FREE";
+      plan: SubscriptionPlan;
       preferences: null;
       storage: "local";
       displayName: null;
