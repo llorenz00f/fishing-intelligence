@@ -9,9 +9,15 @@ export function scoreLabel(score: number) {
   if (score >= 40) return "Discreto";
   return "Poco favorevole";
 }
+export function scoreTone(score: number | null | undefined) {
+  if (score == null || !Number.isFinite(score)) return undefined;
+  if (score >= 60) return "good";
+  if (score >= 40) return "medium";
+  return "poor";
+}
 export function ScoreRing({ score }: { score: number }) {
   const value = Math.max(0, Math.min(100, score));
-  return <div className="score-ring" role="img" aria-label={`Fishing Score ${value} su 100`} style={{ "--score": value } as CSSProperties}>
+  return <div className="score-ring" data-score-tone={scoreTone(value)} role="img" aria-label={`Fishing Score ${value} su 100`} style={{ "--score": value } as CSSProperties}>
     <svg viewBox="0 0 180 180" aria-hidden="true"><circle className="ring-track" cx="90" cy="90" r="78" /><circle className="ring-value" cx="90" cy="90" r="78" pathLength="100" strokeDasharray={`${value} 100`} /></svg>
     <div><strong>{value}</strong><span>FISHING SCORE</span></div>
   </div>;

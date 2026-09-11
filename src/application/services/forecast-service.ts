@@ -59,7 +59,7 @@ export class ForecastService {
     const weather = weatherResult.status === "fulfilled" ? weatherResult.value : [];
     const marine = marineResult.status === "fulfilled" ? marineResult.value : [];
     const marineByTime = new Map(marine.map((point) => [point.timestamp, point.conditions]));
-    const weatherByTime = new Map(weather.map((point) => [point.timestamp, point.conditions]));
+    const weatherByTime = new Map(weather.map((point) => [point.timestamp, point]));
     const timestamps = Array.from(new Set([...weatherByTime.keys(), ...marineByTime.keys()])).sort();
     const depth = await this.providers.bathymetry.getDepthAtLocation(input.location);
     const fetchedAt = new Date().toISOString();
@@ -68,7 +68,8 @@ export class ForecastService {
       const snapshot = buildSnapshot({
         timestamp,
         location: input.location,
-        weather: weatherByTime.get(timestamp) ?? {},
+        weather: weatherByTime.get(timestamp)?.conditions ?? {},
+        astronomical: weatherByTime.get(timestamp)?.astronomical,
         marine: { ...(marineByTime.get(timestamp) ?? {}), depthM: marineByTime.get(timestamp)?.depthM ?? depth ?? undefined },
         provider: `${this.providers.weather.name}+${this.providers.marine.name}`,
         fetchedAt,
@@ -110,16 +111,17 @@ function buildSnapshot(input: {
   timestamp: string;
   location: LocationPoint;
   weather: EnvironmentSnapshot["weather"];
+  astronomical?: EnvironmentSnapshot["astronomical"];
   marine: EnvironmentSnapshot["marine"];
   provider: string;
   fetchedAt: string;
   start: Date;
 }): EnvironmentSnapshot {
   const date = new Date(input.timestamp);
-  const sunrise = new Date(date);
-  sunrise.setUTCHours(4, 42, 0, 0);
-  const sunset = new Date(date);
-  sunset.setUTCHours(17, 38, 0, 0);
+  const astronomical = input.astronomical ?? { sunrise: "", sunset: "", isDay: false };
+  const sunrise = Date.parse(astronomical.sunrise);
+  const sunset = Date.parse(astronomical.sunset);
+  const hasSolarEvents = Number.isFinite(sunrise) && Number.isFinite(sunset) && sunrise < sunset;
   const missingFields = missing(input.weather, input.marine);
   const totalFields = 17;
   const dataCoverage = Math.round(((totalFields - missingFields.length) / totalFields) * 100);
@@ -129,15 +131,11 @@ function buildSnapshot(input: {
     location: input.location,
     weather: input.weather,
     marine: input.marine,
-    astronomical: {
-      sunrise: sunrise.toISOString(),
-      sunset: sunset.toISOString(),
-      isDay: date >= sunrise && date <= sunset,
-    },
+    astronomical,
     derived: {
       month: date.getUTCMonth() + 1,
-      minutesFromSunrise: Math.round((date.getTime() - sunrise.getTime()) / 60000),
-      minutesToSunset: Math.round((sunset.getTime() - date.getTime()) / 60000),
+      minutesFromSunrise: hasSolarEvents ? Math.round((date.getTime() - sunrise) / 60000) : undefined,
+      minutesToSunset: hasSolarEvents ? Math.round((sunset - date.getTime()) / 60000) : undefined,
       forecastHorizonHours: Math.max(0, Math.round((date.getTime() - input.start.getTime()) / 3600000)),
     },
     provider: input.provider,

@@ -1,5 +1,6 @@
 import { ArrowDownRight, Check, ChevronDown } from "lucide-react";
 import type { FishingScoreResult, ScoreFactorMessage } from "@/domain/scoring/types";
+import { scoreTone } from "./ScoreCard";
 export function FactorBreakdown({ score }: { score: FishingScoreResult }) {
   return <section className="factor-section"><div className="section-heading"><h2>Perche questo score?</h2></div>
     <ul className="factor-list">
@@ -7,7 +8,7 @@ export function FactorBreakdown({ score }: { score: FishingScoreResult }) {
       {score.negativeFactors.slice(0, 2).map((factor) => <li key={factor.key}><span className="factor-caution"><ArrowDownRight size={16} /></span><div><strong>{factor.label}</strong><p>{explain(factor, false)}</p></div></li>)}
     </ul>
     <details className="factor-details"><summary>Dettagli dello score<ChevronDown size={18} /></summary><div className="stack">
-      {score.factorBreakdown.map((factor) => <div key={factor.key} className="factor-row"><span>{factor.label}</span><div className="bar-track" aria-hidden="true"><div className="bar-fill" style={{ "--score": factor.score } as React.CSSProperties} /></div><strong>{factor.score}</strong></div>)}
+      {score.factorBreakdown.map((factor) => <div key={factor.key} className="factor-row" data-score-tone={scoreTone(factor.score)}><span>{factor.label}</span><div className="bar-track" aria-hidden="true"><div className="bar-fill" style={{ "--score": factor.score } as React.CSSProperties} /></div><strong>{factor.score}</strong></div>)}
       <p className="help-text">Copertura dati {score.dataCoverage}% · Affidabilita {score.confidence}%</p>
       {score.missingFactors.length ? <p className="muted">Dati momentaneamente assenti: {score.missingFactors.map((factor) => factor.label).join(", ")}.</p> : null}
     </div></details>

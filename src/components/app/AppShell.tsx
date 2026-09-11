@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, House, LockKeyhole, Map, Play, Sparkles, Waves } from "lucide-react";
+import { BookOpen, CalendarDays, House, LockKeyhole, Map, Play, Sparkles, UserRound, Waves } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { WeatherAmbientLayer } from "@/components/appearance/WeatherAmbientLayer";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: House },
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const live = pathname.endsWith("/live");
   const map = pathname === "/map";
   return <div className="app-shell" data-map={map} data-live={live}>
+    <WeatherAmbientLayer />
     <a href="#main-content" className="skip-link">Vai al contenuto</a>
     <aside className="sidebar">
       <Link href="/dashboard" className="brand-lockup"><span className="brand-mark"><Waves size={24} /></span><span>Fishing<br />Intelligence</span></Link>
@@ -32,10 +34,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return <Link key={href} href={href} data-active={active} aria-current={active ? "page" : undefined}><Icon size={21} /><span>{label}</span></Link>;
       })}</nav>
       <Link href="/sessions/new" className="primary-action"><Play size={18} />Inizia sessione</Link>
-      <div className="sidebar-status"><ThemeToggle /><span><LockKeyhole size={14} />Il tuo diario, privato.</span></div>
+      <div className="sidebar-status"><Link href="/profile" className="profile-nav-link"><UserRound size={20} />Profilo</Link><ThemeToggle /><span><LockKeyhole size={14} />Il tuo diario, privato.</span></div>
     </aside>
     <main id="main-content" className="app-main">
-      {!map && !live ? <div className="mobile-brand"><Link href="/dashboard" className="brand-lockup"><Waves size={24} /><span>Fishing Intelligence</span></Link><ThemeToggle /></div> : null}
+      {!map && !live ? <div className="mobile-brand"><Link href="/dashboard" className="brand-lockup"><Waves size={24} /><span>Fishing Intelligence</span></Link><div className="mobile-profile-actions"><ThemeToggle /><Link href="/profile" className="icon-action" aria-label="Profilo" title="Profilo"><UserRound size={20} /></Link></div></div> : null}
       <div className="route-content" key={pathname}>{children}</div>
     </main>
     {!live ? <BottomNavigation pathname={pathname} /> : null}

@@ -1,4 +1,4 @@
-import type { EnvironmentSnapshot, MarineConditions, WeatherConditions } from "@/domain/forecast/types";
+import type { AstronomicalContext, EnvironmentSnapshot, MarineConditions, WeatherConditions } from "@/domain/forecast/types";
 import type { LocationPoint } from "@/types/product";
 
 export type ProviderRequest = {
@@ -10,6 +10,8 @@ export type ProviderRequest = {
 export type HourlyWeatherPoint = {
   timestamp: string;
   conditions: WeatherConditions;
+  /** Solar events for this forecast hour, when available from the provider. */
+  astronomical?: AstronomicalContext;
 };
 
 export type HourlyMarinePoint = {
@@ -47,6 +49,7 @@ export type ForecastSnapshotFactoryInput = {
   timestamp: string;
   location: LocationPoint;
   weather: WeatherConditions;
+  astronomical?: AstronomicalContext;
   marine: MarineConditions;
   provider: string;
   fetchedAt: string;

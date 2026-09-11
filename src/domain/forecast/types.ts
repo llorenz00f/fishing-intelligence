@@ -1,6 +1,8 @@
 import type { LocationPoint, PressureTrend } from "@/types/product";
 
 export type WeatherConditions = {
+  /** WMO weather interpretation code supplied by the weather provider. */
+  weatherCode?: number;
   airTemperatureC?: number;
   pressureMslHpa?: number;
   surfacePressureHpa?: number;
@@ -27,7 +29,9 @@ export type MarineConditions = {
 };
 
 export type AstronomicalContext = {
+  /** ISO instant; an empty string means the provider supplied no event. */
   sunrise: string;
+  /** ISO instant; an empty string means the provider supplied no event. */
   sunset: string;
   isDay: boolean;
   moonPhase?: number;

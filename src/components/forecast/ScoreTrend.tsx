@@ -8,7 +8,7 @@ export function ScoreTrend({ hours }: { hours: HourlyForecastViewModel[] }) {
   if (visible.length < 2) return null;
   const delta = visible[visible.length - 1].score.finalScore - visible[0].score.finalScore;
   const points = visible.map((hour, i) => `${i / (visible.length - 1) * 220},${46 - hour.score.finalScore * .4}`).join(" ");
-  return <div className="score-trend"><span>{delta === 0 ? <Minus size={16} /> : delta > 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}{delta === 0 ? "Stabile" : `${delta > 0 ? "+" : ""}${delta}`} · prossime {visible.length - 1}h</span><svg viewBox="0 0 220 50" role="img" aria-label="Andamento dello score nelle prossime ore"><polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" /></svg></div>;
+  return <div className="score-trend" data-direction={delta === 0 ? "stable" : delta > 0 ? "up" : "down"}><span>{delta === 0 ? <Minus size={16} /> : delta > 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}{delta === 0 ? "Stabile" : `${delta > 0 ? "+" : ""}${delta}`} · prossime {visible.length - 1}h</span><svg viewBox="0 0 220 50" role="img" aria-label="Andamento dello score nelle prossime ore"><polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" /></svg></div>;
 }
 export function WindowCountdown({ start, end }: { start: string; end: string }) {
   const [now, setNow] = useState<number | null>(null);

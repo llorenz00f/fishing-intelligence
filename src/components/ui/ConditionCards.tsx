@@ -22,4 +22,8 @@ export function ConditionCards({ snapshot }: { snapshot: EnvironmentSnapshot }) 
     <div className="sun-times"><span><Sunrise size={18} />{formatHour(astronomical.sunrise)}</span><span className="sun-track"><Compass size={16} /></span><span><Sunset size={18} />{formatHour(astronomical.sunset)}</span></div>
   </section>;
 }
-function formatHour(timestamp: string) { return new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp)); }
+function formatHour(timestamp: string) {
+  return Number.isFinite(Date.parse(timestamp))
+    ? new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp))
+    : "N/D";
+}

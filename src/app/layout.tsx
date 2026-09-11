@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
+import "@/components/appearance/appearance.css";
+import { ThemeProvider } from "@/components/appearance/ThemeProvider";
+import { themeBootstrapScript, themeStyleSheet } from "@/domain/appearance/registry";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,8 +41,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head><script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('fishing-theme');document.documentElement.dataset.theme=t==='light'?'light':'dark'}catch(e){}" }} /></head>
-      <body className="min-h-full">{children}</body>
+      <head><style>{themeStyleSheet}</style><script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} /></head>
+      <body className="min-h-full"><ThemeProvider>{children}</ThemeProvider></body>
     </html>
   );
 }

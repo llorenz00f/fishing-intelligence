@@ -1,4 +1,5 @@
 "use client";
+import { ForecastThemeBridge } from "@/components/appearance/ThemeProvider";
 import { useRef, useState } from "react";
 import { CalendarDays, Check, Fish, MapPin, RefreshCw, Star, Target } from "lucide-react";
 import type { DailyForecastViewModel, ForecastViewModel, HourlyForecastViewModel } from "@/application/services/forecast-service";
@@ -67,6 +68,7 @@ export function ForecastExplorer({ initialForecast }: { initialForecast: Forecas
   }
   function selectDay(next: DailyForecastViewModel) { setDate(next.date); setTimestamp(bestHour(next)?.timestamp ?? next.hours[0].timestamp); }
   return <>
+    <ForecastThemeBridge forecast={forecast} />
     <MobileHeader title="Quando andare." location={forecast.location.label} />
     <div className="forecast-layout" aria-busy={pending}>
       <div className="stack">

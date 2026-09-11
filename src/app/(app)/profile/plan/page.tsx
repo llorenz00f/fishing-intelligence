@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { ArrowLeft, Check, Crown } from "lucide-react";
+export default function PlanPage() {
+  return <div className="profile-page"><Link href="/profile" className="appearance-back"><ArrowLeft size={17} />Profilo</Link><header className="appearance-heading"><div><p className="eyebrow">FISHING INTELLIGENCE</p><h1>Il tuo piano</h1></div><Crown size={27} /></header><div className="plan-comparison">{[{ name: "FREE", features: ["Deep Ocean chiaro e scuro", "Preferenze di accessibilita"] }, { name: "PRO", features: ["Tutte le palette premium", "Dynamic Weather", "Intensita degli effetti", "Aspetto sincronizzato tra dispositivi"] }, { name: "CAPTAIN", features: ["Tutta la personalizzazione PRO", "Il piano completo Fishing Intelligence"] }].map(plan => <section key={plan.name}><h2>{plan.name}</h2><ul>{plan.features.map(feature => <li key={feature}><Check size={16} />{feature}</li>)}</ul></section>)}</div><p className="muted">Le nuove sottoscrizioni non sono ancora disponibili.</p></div>;
+}

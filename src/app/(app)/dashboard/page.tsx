@@ -11,6 +11,7 @@ import { SessionCard } from "@/components/sessions/SessionCard";
 import { getDemoForecast, demoSessions, demoHistory } from "@/data/demo";
 import { labelForSpecies, labelForTechnique } from "@/data/catalog";
 import { calculateSimilarity } from "@/domain/personalization/similarity";
+import { ForecastThemeBridge } from "@/components/appearance/ThemeProvider";
 
 export default async function DashboardPage() {
   await connection();
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
   const windowLabel = bestWindow ? `${formatHour(bestWindow.start)} – ${formatHour(bestWindow.end)}` : "Non disponibile";
   const similarity = calculateSimilarity({ discipline: forecast.discipline, technique: forecast.technique, species: forecast.species, environment: current.snapshot, history: demoHistory });
   return <>
+    <ForecastThemeBridge forecast={forecast} />
     <MobileHeader title="Il tuo mare, oggi." location={location} refresh />
     <div className="dashboard-grid">
       <div className="stack">

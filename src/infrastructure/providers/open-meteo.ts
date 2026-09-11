@@ -6,6 +6,8 @@ import type {
   WeatherProvider,
 } from "@/infrastructure/providers/types";
 import { calculatePressureTrend } from "@/domain/forecast/pressure-trend";
+import type { AstronomicalContext } from "@/domain/forecast/types";
+import { z } from "zod";
 
 const timeoutMs = 7000;
 
@@ -24,6 +26,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 type OpenMeteoWeatherResponse = {
   hourly?: {
     time?: string[];
+    weather_code?: Array<number | null>;
+    is_day?: Array<number | null>;
     temperature_2m?: number[];
     pressure_msl?: number[];
     surface_pressure?: number[];
@@ -33,7 +37,24 @@ type OpenMeteoWeatherResponse = {
     wind_direction_10m?: number[];
     wind_gusts_10m?: number[];
   };
+  daily?: {
+    time?: string[];
+    sunrise?: Array<string | null>;
+    sunset?: Array<string | null>;
+  };
 };
+
+const utcTimestamp = z.union([
+  z.iso.datetime({ offset: true }),
+  z.iso.datetime({ offset: true, precision: -1 }),
+]);
+
+function providerInstant(value: string | null | undefined): string {
+  if (typeof value !== "string" || !value) return "";
+  // Open-Meteo omits the offset even when timezone=UTC was requested.
+  const instant = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`;
+  return utcTimestamp.safeParse(instant).success ? new Date(instant).toISOString() : "";
+}
 
 type OpenMeteoMarineResponse = {
   hourly?: {
@@ -64,7 +85,10 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
       end_date: end,
       timezone: "UTC",
       wind_speed_unit: "kmh",
+      daily: "sunrise,sunset",
       hourly: [
+        "weather_code",
+        "is_day",
         "temperature_2m",
         "pressure_msl",
         "surface_pressure",
@@ -78,20 +102,44 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
     const data = await fetchJson<OpenMeteoWeatherResponse>(`https://api.open-meteo.com/v1/forecast?${params}`);
     const time = data.hourly?.time ?? [];
     const pressure = data.hourly?.pressure_msl ?? [];
-    return time.map((isoLike, index) => ({
-      timestamp: `${isoLike}:00.000Z`,
-      conditions: {
-        airTemperatureC: data.hourly?.temperature_2m?.[index],
-        pressureMslHpa: pressure[index],
-        surfacePressureHpa: data.hourly?.surface_pressure?.[index],
-        pressureTrend: calculatePressureTrend(pressure.slice(Math.max(0, index - 4), index + 1)),
-        cloudCoverPct: data.hourly?.cloud_cover?.[index],
-        precipitationMm: data.hourly?.precipitation?.[index],
-        windSpeedKph: data.hourly?.wind_speed_10m?.[index],
-        windDirectionDeg: data.hourly?.wind_direction_10m?.[index],
-        windGustKph: data.hourly?.wind_gusts_10m?.[index],
-      },
-    }));
+    const solarByDate = new Map((data.daily?.time ?? []).map((date, index) => [date, {
+      sunrise: providerInstant(data.daily?.sunrise?.[index]),
+      sunset: providerInstant(data.daily?.sunset?.[index]),
+    }]));
+
+    return time.flatMap((isoLike, index): HourlyWeatherPoint[] => {
+      const timestamp = providerInstant(isoLike);
+      if (!timestamp) return [];
+      const dailySolar = solarByDate.get(timestamp.slice(0, 10));
+      const solar = dailySolar?.sunrise && dailySolar?.sunset && dailySolar.sunrise < dailySolar.sunset &&
+        Date.parse(dailySolar.sunset) - Date.parse(dailySolar.sunrise) < 24 * 60 * 60 * 1000
+        ? dailySolar
+        : undefined;
+      const isDay = data.hourly?.is_day?.[index];
+      const astronomical: AstronomicalContext | undefined = solar || isDay === 0 || isDay === 1
+        ? {
+          sunrise: solar?.sunrise ?? "",
+          sunset: solar?.sunset ?? "",
+          isDay: isDay === 0 || isDay === 1 ? isDay === 1 : Boolean(solar && timestamp >= solar.sunrise && timestamp <= solar.sunset),
+        }
+        : undefined;
+      return [{
+        timestamp,
+        astronomical,
+        conditions: {
+          weatherCode: data.hourly?.weather_code?.[index] ?? undefined,
+          airTemperatureC: data.hourly?.temperature_2m?.[index],
+          pressureMslHpa: pressure[index],
+          surfacePressureHpa: data.hourly?.surface_pressure?.[index],
+          pressureTrend: calculatePressureTrend(pressure.slice(Math.max(0, index - 4), index + 1)),
+          cloudCoverPct: data.hourly?.cloud_cover?.[index],
+          precipitationMm: data.hourly?.precipitation?.[index],
+          windSpeedKph: data.hourly?.wind_speed_10m?.[index],
+          windDirectionDeg: data.hourly?.wind_direction_10m?.[index],
+          windGustKph: data.hourly?.wind_gusts_10m?.[index],
+        },
+      }];
+    });
   }
 }
 

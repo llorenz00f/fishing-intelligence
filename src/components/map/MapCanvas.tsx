@@ -12,6 +12,7 @@ import type { ForecastViewModel } from "@/application/services/forecast-service"
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { MapBottomSheet, type SheetSnap } from "./MapBottomSheet";
 import { ThemeToggle } from "@/components/app/ThemeToggle";
+import { scoreTone } from "@/components/forecast/ScoreCard";
 
 type SpotView = { id: string; name: string; location: LocationPoint; discipline?: DisciplineCode; notes?: string };
 const techniqueFor: Record<DisciplineCode, TechniqueCode> = { BOAT: "BOTTOM_FISHING", SHORE_SPINNING: "SHORE_SPINNING", SURFCASTING: "STANDARD_SURFCASTING", SPEARFISHING: "SPEAR_AMBUSH" };
@@ -100,6 +101,14 @@ export default function MapCanvas() {
   useEffect(() => { markerElements.current.forEach((element, id) => { element.dataset.selected = String(selected?.id === id); }); }, [selected, ready]);
   useEffect(() => {
     if (!selected) return;
+    const element = markerElements.current.get(selected.id);
+    if (!element) return;
+    const tone = scoreTone(forecast?.current.score.finalScore);
+    if (tone) element.dataset.scoreTone = tone;
+    else delete element.dataset.scoreTone;
+  }, [selected, forecast, spots, ready]);
+  useEffect(() => {
+    if (!selected) return;
     const controller = new AbortController();
     const discipline = selected.discipline ?? "SHORE_SPINNING";
     const params = new URLSearchParams({ lat: String(selected.location.latitude), lng: String(selected.location.longitude), label: selected.name, discipline, technique: techniqueFor[discipline], species: "SPIGOLA", days: "1" });
@@ -159,7 +168,7 @@ export default function MapCanvas() {
       </div>
       {snap !== "collapsed" ? point ? <div className="stack"><p className="help-text">{point.lat.toFixed(5)}, {point.lng.toFixed(5)}</p><label>Nome dello spot<input value={name} onChange={event => setName(event.target.value)} placeholder={`Spot ${spots.length + 1}`} /></label><button className="primary-action" onClick={saveSpot}><Save size={18} />Salva spot</button></div> : selected ? <div className="spot-details">
         {!forecast && !forecastError ? <div className="skeleton skeleton-item" aria-label="Caricamento condizioni spot" /> : <div className="grid-2">
-          <div className="metric"><span>Fishing Score</span><strong>{forecast?.current.score.finalScore ?? "N/D"}</strong></div>
+          <div className="metric"><span>Fishing Score</span><strong className="spot-score" data-score-tone={scoreTone(forecast?.current.score.finalScore)}>{forecast?.current.score.finalScore ?? "N/D"}</strong></div>
           <div className="metric"><span>Profondita</span><strong>{conditions?.marine.depthM !== undefined ? `${conditions.marine.depthM} m` : "Non disponibile"}</strong></div>
           <div className="metric"><span>Onde</span><strong>{conditions?.marine.waveHeightM !== undefined ? `${conditions.marine.waveHeightM.toFixed(1)} m` : "Non disponibili"}</strong></div>
           <div className="metric"><span>Le tue uscite qui</span><strong>{priorSessions}</strong></div>

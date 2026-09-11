@@ -29,9 +29,20 @@ export class MockWeatherProvider implements WeatherProvider {
       const date = new Date(timestamp);
       const hour = date.getUTCHours();
       const pressureWindow = pressures.slice(Math.max(0, index - 4), index + 1);
+      const sunrise = new Date(date);
+      sunrise.setUTCHours(4, 42, 0, 0);
+      const sunset = new Date(date);
+      sunset.setUTCHours(17, 38, 0, 0);
       return {
         timestamp,
+        // Synthetic solar events are intentionally limited to the mock provider.
+        astronomical: {
+          sunrise: sunrise.toISOString(),
+          sunset: sunset.toISOString(),
+          isDay: date >= sunrise && date <= sunset,
+        },
         conditions: {
+          weatherCode: index % 29 === 0 ? 61 : 2,
           airTemperatureC: 18 + Math.sin((hour - 8) / 24 * Math.PI * 2) * 4,
           pressureMslHpa: pressures[index],
           surfacePressureHpa: pressures[index] - 1.8,
