@@ -27,7 +27,7 @@ Preview locale: http://localhost:3000
 Variabili principali:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (la vecchia `NEXT_PUBLIC_SUPABASE_ANON_KEY` resta supportata)
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `DATA_PROVIDER_MODE=live|mock`
 - `OPEN_METEO_API_KEY` opzionale

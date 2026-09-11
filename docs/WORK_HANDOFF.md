@@ -28,7 +28,7 @@ E in corso l'integrazione account reale: Supabase Auth, profili, onboarding, ruo
 ## Blocco esterno
 
 - Configurare in Supabase le tre migration in ordine.
-- Configurare in Vercel NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.
+- Configurare in Vercel NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (la vecchia ANON_KEY resta supportata).
 - Configurare SUPABASE_SERVICE_ROLE_KEY solo se serve lo script admin locale; non inserirla nel client o nel repository.
 - Aggiungere gli URL di callback locale e Vercel in Supabase Auth.
 - Eseguire un test reale con un account confermato. Il checkout Stripe resta disattivato.
