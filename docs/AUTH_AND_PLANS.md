@@ -35,7 +35,7 @@ Applicare in ordine `supabase/migrations/0001_initial_schema.sql`, `0002_appeara
 In Vercel configurare soltanto variabili server/client necessarie, mai il file `.env`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (la nuova Publishable key; la vecchia `NEXT_PUBLIC_SUPABASE_ANON_KEY` resta supportata)
 - `SUPABASE_SERVICE_ROLE_KEY` solo se serve a operazioni server amministrative, mai nel client
 - `DATA_PROVIDER_MODE=live`
 
@@ -45,7 +45,7 @@ Per creare l'admin di sviluppo, usare solo in locale `DEV_ADMIN_ENABLE=true`, `D
 
 1. Creare un progetto Supabase e applicare le tre migration in ordine dal SQL Editor.
 2. In Authentication > URL Configuration aggiungere l'URL locale e https://fishing-intelligence.vercel.app/auth/callback.
-3. Inserire URL, anon key e, solo per lo script admin locale, service role key nelle variabili dell'ambiente.
+3. Inserire URL, Publishable key e, solo per lo script admin locale, service role key nelle variabili dell'ambiente.
 4. Impostare DATA_PROVIDER_MODE=live e verificare registrazione, conferma email, onboarding e accesso.
 
 Il checkout e la fatturazione non sono ancora collegati: BILLING_ENABLED=false resta intenzionale. Il cambio piano disponibile nel profilo e solo una modalita di test per admin e beta tester, non un pagamento reale.
