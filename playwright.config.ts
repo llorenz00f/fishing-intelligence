@@ -8,6 +8,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: externalServer ?? "http://localhost:3000",
+    // Keep route-mocked responses deterministic; app-smoke enables the real worker.
+    serviceWorkers: "block",
     trace: "on-first-retry",
   },
   webServer: externalServer ? undefined : {

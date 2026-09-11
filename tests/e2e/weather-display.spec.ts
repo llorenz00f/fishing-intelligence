@@ -73,6 +73,7 @@ test("light palettes are distinct, persist and fit narrow through desktop viewpo
     colors.push(await page.locator("html").evaluate(node => getComputedStyle(node).getPropertyValue("--background")));
     await page.waitForTimeout(1000);
     await expect(page.locator(".skip-link")).not.toBeInViewport();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await page.screenshot({ path: testInfo.outputPath(`${theme.replaceAll(" ", "-")}-mobile.png`), fullPage: true });
   }
   expect(new Set(colors).size).toBe(3);
@@ -84,6 +85,7 @@ test("light palettes are distinct, persist and fit narrow through desktop viewpo
   await page.getByRole("button", { name: "Chiara", exact: true }).click();
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: width > 800 ? 1000 : 844 });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`palettes-${width}.png`), fullPage: true });
   }
@@ -101,10 +103,10 @@ test("device location updates the dashboard and persists into forecast", async (
   await context.setGeolocation({ latitude: 43.55, longitude: 10.3 });
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Usa la mia posizione" }).click();
-  await expect(page.locator(".mobile-header .location-label")).toContainText("43.55", { timeout: 30_000 });
+  await expect(page.locator(".mobile-header:visible .location-label")).toContainText("43.55", { timeout: 30_000 });
   expect((await context.cookies()).find(cookie => cookie.name === "fi-forecast-location")?.value).toContain("43.55");
   await page.goto("/forecast");
-  await expect(page.locator(".mobile-header .location-label")).toContainText("43.55");
+  await expect(page.locator(".mobile-header:visible .location-label")).toContainText("43.55");
   await page.getByRole("button", { name: "Cambia posizione" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByLabel("Latitudine")).toHaveValue("43.55");
@@ -116,5 +118,5 @@ test("device location updates the dashboard and persists into forecast", async (
   await page.reload();
   await page.getByRole("button", { name: "Usa la mia posizione" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Accesso alla posizione negato" })).toBeVisible();
-  await expect(page.locator(".mobile-header .location-label")).toContainText("43.55");
+  await expect(page.locator(".mobile-header:visible .location-label")).toContainText("43.55");
 });
